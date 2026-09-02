@@ -814,7 +814,7 @@ class registration {
                 $formattedactions[] = get_string($action, 'hub', userdate($values));
             } else {
                 $formattedactions[] = [
-                    'actionname' => get_string("action_$action", 'core_ai'),
+                    'actionname' => \core_ai\aiactions\base::get_name_for_class($action),
                     'aiactionvalues' => self::format_ai_usage_action_values($values),
                 ];
             }

@@ -16,6 +16,12 @@
 
 namespace core_ai\output;
 
+use core_ai\aiactions\base;
+use core_ai\aiactions\explain_text;
+use core_ai\aiactions\generate_image;
+use core_ai\aiactions\generate_text;
+use core_ai\aiactions\summarise_text;
+
 /**
  * Renderable for the full detail of a single logged AI action.
  *
@@ -24,8 +30,12 @@ namespace core_ai\output;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class action_detail implements \renderable, \templatable {
-    /** @var string[] Action basenames that store a text prompt and a generated text response. */
-    private const TEXT_ACTIONS = ['generate_text', 'summarise_text', 'explain_text'];
+    /** @var string[] Action classes that store a text prompt and a generated text response. */
+    private const TEXT_ACTIONS = [
+        generate_text::class,
+        summarise_text::class,
+        explain_text::class,
+    ];
 
     /**
      * Create a new action_detail renderable.
@@ -56,7 +66,7 @@ class action_detail implements \renderable, \templatable {
 
         $data = [
             'id' => $record->id,
-            'actionname' => get_string("action_{$record->actionname}", 'core_ai'),
+            'actionname' => base::get_name_for_class($record->actionname),
             'provider' => $this->format_provider($record->provider),
             'model' => $record->model,
             'success' => (bool) $record->success,
@@ -69,14 +79,14 @@ class action_detail implements \renderable, \templatable {
             'userfullname' => $user ? fullname($user) : null,
             'userprofileurl' => $user ? (new \moodle_url('/user/profile.php', ['id' => $user->id]))->out(false) : null,
             'istext' => $ownaction && in_array($record->actionname, self::TEXT_ACTIONS, true) && $typedata !== null,
-            'isimage' => $ownaction && $record->actionname === 'generate_image' && $typedata !== null,
+            'isimage' => $ownaction && $record->actionname === generate_image::class && $typedata !== null,
         ];
 
         if ($data['istext']) {
             $data['prompt'] = $typedata->prompt;
             $data['generatedcontent'] = $typedata->generatedcontent;
-            $data['prompttokens'] = $typedata->prompttokens;
-            $data['completiontokens'] = $typedata->completiontoken;
+            $data['prompttokens'] = $record->prompttokens;
+            $data['completiontokens'] = $record->completiontokens;
         }
 
         if ($data['isimage']) {

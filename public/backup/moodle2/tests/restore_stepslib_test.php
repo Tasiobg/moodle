@@ -149,6 +149,41 @@ final class restore_stepslib_test extends \advanced_testcase {
     }
 
     /**
+     * Test legacy AI action basenames are normalized when restoring a course module.
+     *
+     * @covers \restore_module_structure_step::process_module
+     */
+    public function test_restore_module_normalizes_legacy_ai_actions(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $forum = $this->getDataGenerator()->create_module('forum', ['course' => $course->id]);
+        $legacyactions = json_encode([
+            'generate_text' => 1,
+            'summarise_text' => 0,
+            \core_ai\aiactions\explain_text::class => 1,
+        ]);
+        $DB->set_field('course_modules', 'enabledaiactions', $legacyactions, ['id' => $forum->cmid]);
+
+        $backupid = $this->backup_course($course);
+        $newcourseid = $this->restore_replacing_content($backupid);
+
+        $moduleid = $DB->get_field('modules', 'id', ['name' => 'forum']);
+        $enabledaiactions = $DB->get_field('course_modules', 'enabledaiactions', [
+            'course' => $newcourseid,
+            'module' => $moduleid,
+        ]);
+        $this->assertEquals([
+            \core_ai\aiactions\explain_text::class => 1,
+            \core_ai\aiactions\generate_text::class => 1,
+            \core_ai\aiactions\summarise_text::class => 0,
+        ], json_decode($enabledaiactions, true));
+    }
+
+    /**
      * Tests the hooks for restore task  settings definition.
      *
      * @covers \restore_root_task::define_settings

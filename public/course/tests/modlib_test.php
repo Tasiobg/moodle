@@ -17,6 +17,8 @@
 namespace core_course;
 
 use core_ai\ai_test_trait;
+use core_ai\aiactions\generate_text;
+use core_ai\manager;
 use core_courseformat\formatactions;
 
 defined('MOODLE_INTERNAL') || die();
@@ -70,7 +72,7 @@ final class modlib_test extends \advanced_testcase {
 
         $this->create_ai_provider([$actionname], \aiprovider_openai\provider::class);
         set_config('enabled', 1, $placement);
-        set_config($actionname, 1, $placement);
+        set_config("core_ai\\aiactions\\{$actionname}", 1, $placement);
 
         $moduleinfo = (object) [
             'course' => $course->id,
@@ -80,7 +82,10 @@ final class modlib_test extends \advanced_testcase {
         // Confirm the action is discovered while the placement is installed and enabled.
         $installed = set_moduleinfo_defaults(clone $moduleinfo);
         $this->assertObjectHasProperty('enabledaiactions', $installed);
-        $this->assertArrayHasKey($actionname, json_decode($installed->enabledaiactions, true));
+        $this->assertArrayHasKey(
+            "core_ai\\aiactions\\{$actionname}",
+            json_decode($installed->enabledaiactions, true)
+        );
 
         // Simulate the placement plugin being uninstalled.
         unset_config('version', $placement);
@@ -100,6 +105,36 @@ final class modlib_test extends \advanced_testcase {
             'course assistance placement' => ['aiplacement_courseassist', 'explain_text'],
             'editor placement' => ['aiplacement_editor', 'generate_text'],
         ];
+    }
+
+    /**
+     * Test module defaults read the namespace-specific AI action form field.
+     *
+     * @covers ::set_moduleinfo_defaults
+     */
+    public function test_set_moduleinfo_defaults_with_action_form_field(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = self::getDataGenerator()->create_course();
+        $PAGE->set_context(\context_course::instance($course->id));
+
+        $this->create_ai_provider(['generate_text'], \aiprovider_openai\provider::class);
+        set_config('enabled', 1, 'aiplacement_editor');
+
+        $fieldname = manager::get_action_form_field_name(generate_text::class);
+        $moduleinfo = (object) [
+            'course' => $course->id,
+            'modulename' => 'forum',
+            $fieldname => 1,
+        ];
+
+        $result = set_moduleinfo_defaults($moduleinfo);
+        $enabledactions = json_decode($result->enabledaiactions, true);
+
+        $this->assertSame(1, $enabledactions[generate_text::class]);
     }
 
     /**

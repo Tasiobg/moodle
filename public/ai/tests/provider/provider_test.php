@@ -293,7 +293,7 @@ final class provider_test extends \advanced_testcase {
                 ];
                 $name = 'action_generate_text';
                 $data = $writer->get_related_data($subcontexts, $name);
-                $this->assertEquals('generate_text', $data->actionname);
+                $this->assertEquals(generate_text::class, $data->actionname);
                 $this->assertEquals($course1context->id, $data->contextid);
                 $this->assertEquals('This is a test prompt 1', $data->prompt);
                 $this->assertEquals('This is the generated content 1', $data->generatedcontent);
@@ -311,7 +311,7 @@ final class provider_test extends \advanced_testcase {
                 ];
                 $name = 'action_generate_text';
                 $data = $writer->get_related_data($subcontexts, $name);
-                $this->assertEquals('generate_text', $data->actionname);
+                $this->assertEquals(generate_text::class, $data->actionname);
                 $this->assertEquals($course2context->id, $data->contextid);
                 $this->assertEquals('This is a test prompt 2', $data->prompt);
                 $this->assertEquals('This is the generated content 2', $data->generatedcontent);
@@ -399,7 +399,7 @@ final class provider_test extends \advanced_testcase {
                 ];
                 $name = 'action_generate_image';
                 $data = $writer->get_related_data($subcontexts, $name);
-                $this->assertEquals('generate_image', $data->actionname);
+                $this->assertEquals(generate_image::class, $data->actionname);
                 $this->assertEquals($course1context->id, $data->contextid);
                 $this->assertEquals('This is a test prompt 1', $data->prompt);
                 $this->assertEquals('1', $data->numberimages);
@@ -419,7 +419,7 @@ final class provider_test extends \advanced_testcase {
                 ];
                 $name = 'action_generate_image';
                 $data = $writer->get_related_data($subcontexts, $name);
-                $this->assertEquals('generate_image', $data->actionname);
+                $this->assertEquals(generate_image::class, $data->actionname);
                 $this->assertEquals($course2context->id, $data->contextid);
                 $this->assertEquals('This is a test prompt 2', $data->prompt);
                 $this->assertEquals('2', $data->numberimages);
@@ -509,7 +509,7 @@ final class provider_test extends \advanced_testcase {
                 ];
                 $name = 'action_summarise_text';
                 $data = $writer->get_related_data($subcontexts, $name);
-                $this->assertEquals('summarise_text', $data->actionname);
+                $this->assertEquals(summarise_text::class, $data->actionname);
                 $this->assertEquals($course1context->id, $data->contextid);
                 $this->assertEquals('This is a test prompt 1', $data->prompt);
                 $this->assertEquals('This is the generated content 1', $data->generatedcontent);
@@ -527,7 +527,7 @@ final class provider_test extends \advanced_testcase {
                 ];
                 $name = 'action_summarise_text';
                 $data = $writer->get_related_data($subcontexts, $name);
-                $this->assertEquals('summarise_text', $data->actionname);
+                $this->assertEquals(summarise_text::class, $data->actionname);
                 $this->assertEquals($course2context->id, $data->contextid);
                 $this->assertEquals('This is a test prompt 2', $data->prompt);
                 $this->assertEquals('This is the generated content 2', $data->generatedcontent);

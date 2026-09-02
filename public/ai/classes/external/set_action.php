@@ -84,8 +84,17 @@ class set_action extends external_api {
         self::validate_context($context);
         require_capability('moodle/site:config', $context);
 
-        [$plugin, $action] = explode('-', $plugin);
-        $actionname = get_string("action_$action", 'core_ai');
+        $actionparts = explode('-', $plugin, 2);
+        if (count($actionparts) !== 2) {
+            throw new \coding_exception("Invalid plugin and action combination received: {$plugin}");
+        }
+        [$plugin, $actionclass] = $actionparts;
+
+        if (!class_exists($actionclass) || !is_a($actionclass, \core_ai\aiactions\base::class, true)) {
+            throw new \coding_exception("Action class does not exist or is not valid: {$actionclass}");
+        }
+
+        $actionname = $actionclass::get_name();
 
         if (!empty($state)) {
             \core\notification::add(
@@ -102,7 +111,7 @@ class set_action extends external_api {
         $manager = \core\di::get(manager::class);
         $manager->set_action_state(
             plugin: $plugin,
-            actionbasename: $action,
+            actionclass: $actionclass,
             enabled: $state,
             instanceid: $providerid
         );

@@ -137,7 +137,10 @@ export default class {
             ]);
 
             // Refocus on the link that as pressed in the first place.
-            updatedRoot.querySelector(`[data-action="togglestate"][data-plugin="${stateToggle.dataset.plugin}"]`).focus();
+            // The plugin value can contain backslashes, which need escaping in a CSS selector.
+            updatedRoot.querySelector(
+                `[data-action="togglestate"][data-plugin="${CSS.escape(stateToggle.dataset.plugin)}"]`
+            ).focus();
 
             // When clicking the toggle and it remains focused, a new tooltip will be generated.
             // Therefore, the old tooltip should be removed.

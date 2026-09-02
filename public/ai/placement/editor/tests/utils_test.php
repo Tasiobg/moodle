@@ -97,7 +97,7 @@ final class utils_test extends \advanced_testcase {
         $actionname = 'generate_text';
         $actionclass = 'core_ai\\aiactions\\' . $actionname;
         set_config('enabled', 0, 'aiplacement_editor');
-        set_config($actionname, 0, 'aiplacement_editor');
+        set_config('enabledactions', json_encode([$actionclass => 0]), 'aiplacement_editor');
         assign_capability("aiplacement/editor:{$actionname}", CAP_PROHIBIT, $this->teacherrole->id, $this->context);
         $this->setUser($this->users[2]);
 
@@ -127,7 +127,7 @@ final class utils_test extends \advanced_testcase {
 
         // Enable the action for the placement plugin.
         // All requirements should now be met.
-        set_config($actionname, 1, 'aiplacement_editor');
+        set_config('enabledactions', json_encode([$actionclass => 1]), 'aiplacement_editor');
         $this->assertTrue(utils::is_html_editor_placement_action_available(
             context: $this->context,
             actionname: $actionname,
@@ -162,8 +162,12 @@ final class utils_test extends \advanced_testcase {
         set_config('enabled', 1, 'aiplacement_editor');
 
         // Enable the actions and check the count.
+        $enabledactions = [];
         foreach ($actionstouse as $action) {
-            set_config($action, 1, 'aiplacement_editor');
+            $enabledactions["core_ai\\aiactions\\{$action}"] = 1;
+        }
+        if (!empty($enabledactions)) {
+            set_config('enabledactions', json_encode($enabledactions), 'aiplacement_editor');
         }
         $actions = utils::get_actions_available($this->context, true);
         $this->assertCount($expectedcount, $actions);

@@ -49,7 +49,7 @@ final class process_explain_text_test extends \advanced_testcase {
     protected base $action;
 
     /** @var string The action name for assertions. */
-    protected string $actionname = 'explain_text';
+    protected string $actionname = \core_ai\aiactions\explain_text::class;
 
     /** @var string The system instruction language key. */
     protected string $systeminstructionkey = 'action_explain_text_instruction';

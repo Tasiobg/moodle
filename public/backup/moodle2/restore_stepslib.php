@@ -4795,6 +4795,24 @@ class restore_module_structure_step extends restore_structure_step {
             unset($data->lang);
         }
 
+        // Convert legacy AI action basenames to fully qualified class names.
+        if (!empty($data->enabledaiactions)) {
+            $enabledaiactions = json_decode($data->enabledaiactions, true);
+            if (is_array($enabledaiactions)) {
+                foreach ($enabledaiactions as $actionname => $enabled) {
+                    if (str_contains($actionname, '\\')) {
+                        continue;
+                    }
+                    $actionclass = "core_ai\\aiactions\\{$actionname}";
+                    if (!array_key_exists($actionclass, $enabledaiactions)) {
+                        $enabledaiactions[$actionclass] = $enabled;
+                    }
+                    unset($enabledaiactions[$actionname]);
+                }
+                $data->enabledaiactions = json_encode($enabledaiactions);
+            }
+        }
+
         // course_module record ready, insert it
         $newitemid = $DB->insert_record('course_modules', $data);
         // save mapping

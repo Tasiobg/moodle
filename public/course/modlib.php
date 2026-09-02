@@ -535,8 +535,8 @@ function set_moduleinfo_defaults($moduleinfo) {
     $aiactions = \core_ai\manager::get_placement_actions_available($PAGE->context, false);
     foreach ($aiactions as $action) {
         $value = 0;
-        $actionname = "action-" . $action['action'];
-        if (!empty($moduleinfo->{$actionname})) {
+        $fieldname = \core_ai\manager::get_action_form_field_name($action['action']);
+        if (!empty($moduleinfo->{$fieldname})) {
             $value = 1;
         }
         $enabledaiactions[$action['action']] = $value;

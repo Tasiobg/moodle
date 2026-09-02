@@ -2238,5 +2238,199 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2026081800.01);
     }
 
+    if ($oldversion < 2026081800.02) {
+        upgrade_set_timeout();
+
+        // Define table ai_action_register.
+        $table = new xmldb_table('ai_action_register');
+
+        // Drop the indexes using the actionname field, they will be recreated below.
+        $index = new xmldb_index('action', XMLDB_INDEX_UNIQUE, ['actionname', 'actionid']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+        $index = new xmldb_index('provider', XMLDB_INDEX_NOTUNIQUE, ['actionname', 'provider']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Increase the actionname field length to store fully qualified class names.
+        $field = new xmldb_field('actionname', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null, 'id');
+        $dbman->change_field_precision($table, $field);
+
+        // Recreate the indexes dropped above.
+        $index = new xmldb_index('action', XMLDB_INDEX_UNIQUE, ['actionname', 'actionid']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        $index = new xmldb_index('provider', XMLDB_INDEX_NOTUNIQUE, ['provider']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Migrate register rows in bulk.
+        $migrateregisterrows = static function (
+            string $basename,
+            string $classname,
+            ?string $provider = null,
+        ) use ($DB): void {
+            $params = [
+                'legacyactionname' => $basename,
+                'newactionname' => $classname,
+            ];
+            $providersql = '';
+            if ($provider !== null) {
+                $providersql = ' AND legacy.provider = :provider';
+                $params['provider'] = $provider;
+            }
+
+            // Remove duplicate legacy register rows left by an interrupted migration.
+            $sql = "SELECT legacy.id
+                      FROM {ai_action_register} legacy
+                      JOIN {ai_action_register} current
+                        ON current.actionname = :newactionname
+                       AND current.actionid = legacy.actionid
+                     WHERE legacy.actionname = :legacyactionname{$providersql}";
+            $duplicateids = $DB->get_fieldset_sql($sql, $params);
+            foreach (array_chunk($duplicateids, 1000) as $idchunk) {
+                $DB->delete_records_list('ai_action_register', 'id', $idchunk);
+            }
+
+            $select = 'actionname = :legacyactionname';
+            if ($provider !== null) {
+                $select .= ' AND provider = :provider';
+            }
+            unset($params['newactionname']);
+            $DB->set_field_select('ai_action_register', 'actionname', $classname, $select, $params);
+        };
+
+        // Map the existing core action basenames to fully qualified class names.
+        $legacyactionclasses = [
+            'generate_text' => \core_ai\aiactions\generate_text::class,
+            'generate_image' => \core_ai\aiactions\generate_image::class,
+            'summarise_text' => \core_ai\aiactions\summarise_text::class,
+            'explain_text' => \core_ai\aiactions\explain_text::class,
+        ];
+
+        // Gather actions provided by providers and placements to migrate their configuration.
+        $pluginactions = [];
+        foreach (['aiprovider', 'aiplacement'] as $plugintype) {
+            $subclassname = $plugintype === 'aiprovider' ? 'provider' : 'placement';
+            foreach (\core_plugin_manager::instance()->get_plugins_of_type($plugintype) as $plugin) {
+                $component = "{$plugintype}_{$plugin->name}";
+                $classname = "\\{$component}\\{$subclassname}";
+                if (!class_exists($classname) || !method_exists($classname, 'get_action_list')) {
+                    continue;
+                }
+                foreach ($classname::get_action_list() as $actionclass) {
+                    $actionclass = ltrim($actionclass, '\\');
+                    if (!is_a($actionclass, \core_ai\aiactions\base::class, true)) {
+                        continue;
+                    }
+                    $pluginactions[$component][$actionclass] = $actionclass;
+                }
+            }
+        }
+
+        // Group action classes by basename for each plugin.
+        $groupbybasename = static function (array $classnames): array {
+            $result = [];
+            foreach ($classnames as $classname) {
+                $basename = substr($classname, (strrpos($classname, '\\') + 1));
+                $result[$basename][$classname] = $classname;
+            }
+            return $result;
+        };
+        $pluginactionsbybasename = [];
+        foreach ($pluginactions as $component => $classnames) {
+            $pluginactionsbybasename[$component] = $groupbybasename($classnames);
+        }
+
+        // Convert unambiguous custom action basenames for each provider.
+        foreach ($pluginactionsbybasename as $component => $pluginbasenamemap) {
+            if (!str_starts_with($component, 'aiprovider_')) {
+                continue;
+            }
+            foreach ($pluginbasenamemap as $basename => $classnames) {
+                if (count($classnames) === 1) {
+                    $migrateregisterrows($basename, reset($classnames), $component);
+                }
+            }
+        }
+
+        // Convert any remaining core action basenames, including records from unavailable providers.
+        foreach ($legacyactionclasses as $basename => $classname) {
+            $migrateregisterrows($basename, $classname);
+        }
+
+        // Consolidate the AI placement action states into one config entry per placement.
+        foreach ($pluginactionsbybasename as $component => $pluginbasenamemap) {
+            if (!str_starts_with($component, 'aiplacement_')) {
+                continue;
+            }
+            $enabledactions = get_config($component, 'enabledactions');
+            $enabledactions = $enabledactions ? (array) json_decode($enabledactions, true) : [];
+            $legacykeys = [];
+            foreach ($pluginbasenamemap as $legacykey => $classnames) {
+                $legacyvalue = get_config($component, $legacykey);
+                if ($legacyvalue === false) {
+                    continue;
+                }
+                foreach ($classnames as $actionclass) {
+                    if (!array_key_exists($actionclass, $enabledactions)) {
+                        $enabledactions[$actionclass] = (int) $legacyvalue;
+                    }
+                }
+                $legacykeys[] = $legacykey;
+            }
+            if ($legacykeys) {
+                set_config('enabledactions', json_encode($enabledactions), $component);
+                foreach ($legacykeys as $legacykey) {
+                    unset_config($legacykey, $component);
+                }
+            }
+        }
+
+        // Migrate action keys stored against individual course modules.
+        $modules = $DB->get_recordset_select(
+            'course_modules',
+            'enabledaiactions IS NOT NULL',
+            [],
+            '',
+            'id, enabledaiactions',
+        );
+        foreach ($modules as $module) {
+            $enabledactions = json_decode($module->enabledaiactions, true);
+            if (!is_array($enabledactions)) {
+                continue;
+            }
+            $newenabledactions = $enabledactions;
+            $changed = false;
+            foreach ($enabledactions as $actionname => $enabled) {
+                if (str_contains($actionname, '\\')) {
+                    continue;
+                }
+                $actionclass = "core_ai\\aiactions\\{$actionname}";
+                if (!array_key_exists($actionclass, $newenabledactions)) {
+                    $newenabledactions[$actionclass] = $enabled;
+                }
+                unset($newenabledactions[$actionname]);
+                $changed = true;
+            }
+            if ($changed) {
+                $DB->set_field(
+                    'course_modules',
+                    'enabledaiactions',
+                    json_encode($newenabledactions),
+                    ['id' => $module->id],
+                );
+            }
+        }
+        $modules->close();
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026081800.02);
+    }
+
     return true;
 }

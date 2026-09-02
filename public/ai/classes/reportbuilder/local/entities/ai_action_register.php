@@ -17,6 +17,7 @@
 namespace core_ai\reportbuilder\local\entities;
 
 use core\di;
+use core_ai\aiactions\base as action_base;
 use core_ai\manager;
 use core\component;
 use core_reportbuilder\local\entities\base;
@@ -71,7 +72,7 @@ class ai_action_register extends base {
             ->add_field("{$mainalias}.actionname")
             ->set_is_sortable(true)
             ->add_callback(static function(string $actionname): string {
-                return get_string("action_{$actionname}", 'core_ai');
+                return action_base::get_name_for_class($actionname);
             });
 
         // Provider column.
@@ -184,10 +185,10 @@ class ai_action_register extends base {
             "{$mainalias}.actionname",
         ))
             ->set_options([
-                'explain_text' => new lang_string('action_explain_text', 'core_ai'),
-                'generate_image' => new lang_string('action_generate_image', 'core_ai'),
-                'generate_text' => new lang_string('action_generate_text', 'core_ai'),
-                'summarise_text' => new lang_string('action_summarise_text', 'core_ai'),
+                \core_ai\aiactions\explain_text::class => new lang_string('action_explain_text', 'core_ai'),
+                \core_ai\aiactions\generate_image::class => new lang_string('action_generate_image', 'core_ai'),
+                \core_ai\aiactions\generate_text::class => new lang_string('action_generate_text', 'core_ai'),
+                \core_ai\aiactions\summarise_text::class => new lang_string('action_summarise_text', 'core_ai'),
             ]);
 
         // Provider filter.

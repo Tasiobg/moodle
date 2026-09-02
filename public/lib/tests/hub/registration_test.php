@@ -16,6 +16,10 @@
 
 namespace core\hub;
 
+use core_ai\aiactions\generate_image;
+use core_ai\aiactions\generate_text;
+use core_ai\aiactions\summarise_text;
+
 /**
  * Class containing unit tests for the site registration class.
  *
@@ -111,23 +115,25 @@ final class registration_test extends \advanced_testcase {
         // Get our site info and check the expected calculations are correct.
         $siteinfo = registration::get_site_info();
         $aisuage = json_decode($siteinfo['aiusage']);
+        $generatetext = generate_text::class;
+        $generateimage = generate_image::class;
         // Check generated text.
-        $this->assertEquals(1, $aisuage->aiprovider_openai->generate_text->success_count);
-        $this->assertEquals(0, $aisuage->aiprovider_openai->generate_text->fail_count);
+        $this->assertEquals(1, $aisuage->aiprovider_openai->{$generatetext}->success_count);
+        $this->assertEquals(0, $aisuage->aiprovider_openai->{$generatetext}->fail_count);
         // Check generated images.
-        $this->assertEquals(2, $aisuage->aiprovider_openai->generate_image->success_count);
-        $this->assertEquals(3, $aisuage->aiprovider_openai->generate_image->fail_count);
-        $this->assertEquals(15, $aisuage->aiprovider_openai->generate_image->average_time);
-        $this->assertEquals(403, $aisuage->aiprovider_openai->generate_image->predominant_error);
+        $this->assertEquals(2, $aisuage->aiprovider_openai->{$generateimage}->success_count);
+        $this->assertEquals(3, $aisuage->aiprovider_openai->{$generateimage}->fail_count);
+        $this->assertEquals(15, $aisuage->aiprovider_openai->{$generateimage}->average_time);
+        $this->assertEquals(403, $aisuage->aiprovider_openai->{$generateimage}->predominant_error);
         // Check time range is set correctly.
         $this->assertEquals($clock->time() - WEEKSECS, $aisuage->time_range->timefrom);
         $this->assertEquals($clock->time(), $aisuage->time_range->timeto);
         // Check model counts.
         $gpt4omodel = 'gpt-4o';
         $dalle3model = 'dall-e-3';
-        $this->assertEquals(1, $aisuage->aiprovider_openai->generate_text->models->{$gpt4omodel}->count);
-        $this->assertEquals(2, $aisuage->aiprovider_openai->generate_image->models->{$dalle3model}->count);
-        $this->assertEquals(3, $aisuage->aiprovider_openai->generate_image->models->unknown->count);
+        $this->assertEquals(1, $aisuage->aiprovider_openai->{$generatetext}->models->{$gpt4omodel}->count);
+        $this->assertEquals(2, $aisuage->aiprovider_openai->{$generateimage}->models->{$dalle3model}->count);
+        $this->assertEquals(3, $aisuage->aiprovider_openai->{$generateimage}->models->unknown->count);
     }
 
     /**
@@ -141,7 +147,7 @@ final class registration_test extends \advanced_testcase {
         // Record some generated text.
         $record = new \stdClass();
         $record->provider = 'aiprovider_openai';
-        $record->actionname = 'generate_text';
+        $record->actionname = generate_text::class;
         $record->actionid = 1;
         $record->userid = 1;
         $record->contextid = 1;
@@ -151,8 +157,13 @@ final class registration_test extends \advanced_testcase {
         $record->model = 'gpt-4o';
         $DB->insert_record('ai_action_register', $record);
 
+        // Record an action from a plugin that is no longer installed.
+        $record->actionname = 'unavailable_plugin\\aiactions\\custom_action';
+        $record->actionid = 8;
+        $DB->insert_record('ai_action_register', $record);
+
         // Record a generated image.
-        $record->actionname = 'generate_image';
+        $record->actionname = generate_image::class;
         $record->actionid = 111;
         $record->timecreated = $clock->time() - 20;
         $record->model = 'dall-e-3';
@@ -163,7 +174,7 @@ final class registration_test extends \advanced_testcase {
         $DB->insert_record('ai_action_register', $record);
 
         // Record some errors.
-        $record->actionname = 'generate_image';
+        $record->actionname = generate_image::class;
         $record->actionid = 4;
         $record->success = false;
         $record->errorcode = 403;
@@ -174,6 +185,14 @@ final class registration_test extends \advanced_testcase {
         $DB->insert_record('ai_action_register', $record);
         $record->actionid = 6;
         $record->errorcode = 404;
+        $DB->insert_record('ai_action_register', $record);
+
+        // Record a summarise text action.
+        $record->actionname = summarise_text::class;
+        $record->actionid = 7;
+        $record->success = true;
+        $record->errorcode = null;
+        $record->model = 'gpt-4o';
         $DB->insert_record('ai_action_register', $record);
     }
 
@@ -199,10 +218,16 @@ final class registration_test extends \advanced_testcase {
             $this->assertEquals('OpenAI API provider', $provider['providername']);
             $this->assertTrue(!empty($provider['aiactions']));
 
-            foreach ($provider['aiactions'] as $action) {
-                $actionname = $action['actionname'];
-                $this->assertTrue(!empty($actionname));
-            }
+            $expected = [
+                get_string('action_generate_text', 'core_ai'),
+                get_string('action_generate_image', 'core_ai'),
+                get_string('action_summarise_text', 'core_ai'),
+                'unavailable_plugin\\aiactions\\custom_action',
+            ];
+            $this->assertEqualsCanonicalizing(
+                $expected,
+                array_column($provider['aiactions'], 'actionname'),
+            );
         }
 
         $timerange = $aisuagedata['timerange'];

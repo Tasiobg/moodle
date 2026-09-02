@@ -4947,7 +4947,7 @@
     <TABLE NAME="ai_action_register" COMMENT="Stores information about processed ai actions.">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="actionname" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Name of the action"/>
+        <FIELD NAME="actionname" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Fully qualified class name of the action"/>
         <FIELD NAME="actionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID in related action table with more details about the action"/>
         <FIELD NAME="success" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Was the action successful when run"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The user who made the request to run the action"/>
@@ -4969,7 +4969,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="action" UNIQUE="true" FIELDS="actionname, actionid" COMMENT="Unique index of actionname and actionid"/>
-        <INDEX NAME="provider" UNIQUE="false" FIELDS="actionname, provider" COMMENT="Index of actionname and provider"/>
+        <INDEX NAME="provider" UNIQUE="false" FIELDS="provider" COMMENT="Index of provider"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="ai_action_generate_text" COMMENT="Stores specific data about generate text actions.">

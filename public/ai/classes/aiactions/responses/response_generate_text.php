@@ -62,7 +62,7 @@ class response_generate_text extends response_base {
     ) {
         parent::__construct(
             success: $success,
-            actionname: 'generate_text',
+            actionname: \core_ai\aiactions\generate_text::class,
             errorcode: $errorcode,
             error: $error,
             errormessage: $errormessage,

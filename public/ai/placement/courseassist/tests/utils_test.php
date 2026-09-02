@@ -126,8 +126,12 @@ final class utils_test extends \advanced_testcase {
         set_config('enabled', 1, 'aiplacement_courseassist');
 
         // Enable the actions and check the count.
+        $enabledactions = [];
         foreach ($actionstouse as $action) {
-            set_config($action, 1, 'aiplacement_courseassist');
+            $enabledactions["core_ai\\aiactions\\{$action}"] = 1;
+        }
+        if (!empty($enabledactions)) {
+            set_config('enabledactions', json_encode($enabledactions), 'aiplacement_courseassist');
         }
         $actions = utils::get_actions_available($this->context, true);
         $this->assertCount($expectedcount, $actions);

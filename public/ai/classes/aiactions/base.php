@@ -61,43 +61,86 @@ abstract class base {
     }
 
     /**
+     * Get the component that owns this action's language strings.
+     *
+     * @return string The action's component name.
+     */
+    public static function get_language_component(): string {
+        return \core\component::get_component_from_classname(static::class) ?? 'core_ai';
+    }
+
+    /**
+     * Get the language string identifier used to resolve the action's help text.
+     *
+     * @return string The action's help string identifier.
+     */
+    public static function get_help_string_id(): string {
+        return 'action_' . static::get_basename();
+    }
+
+    /**
      * Get the action name.
      *
-     * Defaults to the action name string.
+     * Defaults to the action name string resolved against the action's own
+     * language component. Core actions resolve to `core_ai`; third-party
+     * actions resolve to their plugin component, so custom actions should
+     * define `action_<basename>` in their language file.
      *
      * @return string
      */
     public static function get_name(): string {
-        $stringid = 'action_' . self::get_basename();
-        return get_string($stringid, 'core_ai');
+        $component = static::get_language_component();
+        return get_string('action_' . static::get_basename(), $component);
+    }
+
+    /**
+     * Get the display name for a stored action class.
+     *
+     * Historical records may reference action classes from plugins that are no longer installed.
+     *
+     * @param string $actionclass The stored action class name.
+     * @return string The action display name, or the stored value when the class is unavailable.
+     */
+    public static function get_name_for_class(string $actionclass): string {
+        if (!class_exists($actionclass) || !is_a($actionclass, self::class, true)) {
+            return $actionclass;
+        }
+
+        return $actionclass::get_name();
     }
 
     /**
      * Get the action description.
      *
-     * Defaults to the action description string.
+     * Defaults to the action description string resolved against the action's own
+     * language component. Custom actions should define
+     * `action_<basename>_desc` in their language file.
      *
      * @return string
      */
     public static function get_description(): string {
-        $stringid = 'action_' . self::get_basename() . '_desc';
-        return get_string($stringid, 'core_ai');
+        $component = static::get_language_component();
+        return get_string('action_' . static::get_basename() . '_desc', $component);
     }
 
     /**
      * Get the system instruction for the action.
      *
-     * @return string The system instruction for the action.
+     * Resolved against the action's own language component. Custom actions should
+     * define `action_<basename>_instruction` in their language file.
+     *
+     * @return string The system instruction for the action, or an empty string.
      */
     public static function get_system_instruction(): string {
-        $stringid = 'action_' . self::get_basename() . '_instruction';
+        $component = static::get_language_component();
+        $stringid = 'action_' . static::get_basename() . '_instruction';
 
         // If the string doesn't exist, return an empty string.
-        if (!get_string_manager()->string_exists($stringid, 'core_ai')) {
+        if (!get_string_manager()->string_exists($stringid, $component)) {
             return '';
         }
 
-        return get_string($stringid, 'core_ai');
+        return get_string($stringid, $component);
     }
 
     /**
@@ -117,7 +160,7 @@ abstract class base {
      */
     protected function get_tablename(): string {
         // Table name should always be in this format.
-        return 'ai_action_' . $this->get_basename();
+        return 'ai_action_' . static::get_basename();
     }
 
     /**
@@ -126,6 +169,6 @@ abstract class base {
      * @return string The class name of the response object.
      */
     public static function get_response_classname(): string {
-        return responses::class . '\\response_' . self::get_basename();
+        return responses::class . '\\response_' . static::get_basename();
     }
 }

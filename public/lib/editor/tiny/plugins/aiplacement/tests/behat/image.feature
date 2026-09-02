@@ -73,12 +73,12 @@ Feature: Generate image using AI
   @javascript
   Scenario: Image generation using AI is not available if placement action is not enabled
     Given the following config values are set as admin:
-      | generate_image |  | aiplacement_editor |
+      | enabledactions | {"core_ai\\\\aiactions\\\\generate_text":1,"core_ai\\\\aiactions\\\\generate_image":0} | aiplacement_editor |
     When I am on the "PageName2" "page activity" page logged in as teacher1
     And I navigate to "Settings" in current page administration
     Then "AI generate image" button should not exist in the "Description" TinyMCE editor
     And the following config values are set as admin:
-      | generate_image | 1 | aiplacement_editor |
+      | enabledactions | {"core_ai\\\\aiactions\\\\generate_text":1,"core_ai\\\\aiactions\\\\generate_image":1} | aiplacement_editor |
     And I am on the "PageName2" "page activity" page logged in as teacher1
     And I navigate to "Settings" in current page administration
     And "AI generate image" button should exist in the "Description" TinyMCE editor
@@ -86,7 +86,7 @@ Feature: Generate image using AI
   @javascript
   Scenario: Image generation using AI is not available if provider action is not enabled and placement action is enabled
     Given the following config values are set as admin:
-      | generate_image |  | aiplacement_editor |
+      | enabledactions | {"core_ai\\\\aiactions\\\\generate_text":1,"core_ai\\\\aiactions\\\\generate_image":0} | aiplacement_editor |
     And I set the following action configuration for ai provider with name "openai":
       | action          | enabled |
       | generate_image  | 0       |
@@ -94,7 +94,7 @@ Feature: Generate image using AI
     And I navigate to "Settings" in current page administration
     Then "AI generate image" button should not exist in the "Description" TinyMCE editor
     And the following config values are set as admin:
-      | generate_image | 1 | aiplacement_editor |
+      | enabledactions | {"core_ai\\\\aiactions\\\\generate_text":1,"core_ai\\\\aiactions\\\\generate_image":1} | aiplacement_editor |
     And I am on the "PageName2" "page activity" page logged in as teacher1
     And I navigate to "Settings" in current page administration
     And "AI generate image" button should not exist in the "Description" TinyMCE editor
