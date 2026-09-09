@@ -25,9 +25,9 @@ Feature: Course-level AI usage report
       | provider          | name            | enabled | apikey | orgid |
       | aiprovider_openai | OpenAI API test | 1       | 123    | abc   |
     And the following "core_ai > ai actions" exist:
-      | actionname    | user     | success | provider          | course |
-      | generate_text | student1 | 1       | aiprovider_openai | C1     |
-      | generate_text | student2 | 1       | aiprovider_openai | C1     |
+      | actionname                      | user     | success | provider          | course |
+      | core_ai\aiactions\generate_text | student1 | 1       | aiprovider_openai | C1     |
+      | core_ai\aiactions\generate_text | student2 | 1       | aiprovider_openai | C1     |
 
   Scenario: An editing teacher can view AI usage for every student in the course
     Given I am logged in as "teacher1"

@@ -17,6 +17,7 @@
 namespace report_aiusage\reportbuilder\local\systemreports;
 
 use context_course;
+use core_ai\aiactions\generate_text;
 use core_reportbuilder\system_report_factory;
 use core_reportbuilder\exception\report_access_exception;
 
@@ -43,7 +44,7 @@ final class course_usage_test extends \advanced_testcase {
         global $DB;
 
         $DB->insert_record('ai_action_register', (object) [
-            'actionname' => 'generate_text',
+            'actionname' => generate_text::class,
             'actionid' => ++self::$nextactionid,
             'success' => 1,
             'userid' => $userid,

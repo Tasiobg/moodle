@@ -51,7 +51,7 @@ class response_generate_image extends response_base {
     ) {
         parent::__construct(
             success: $success,
-            actionname: 'generate_image',
+            actionname: \core_ai\aiactions\generate_image::class,
             errorcode: $errorcode,
             error: $error,
             errormessage: $errormessage,

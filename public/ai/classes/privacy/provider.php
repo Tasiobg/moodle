@@ -16,6 +16,10 @@
 
 namespace core_ai\privacy;
 
+use core_ai\aiactions\explain_text;
+use core_ai\aiactions\generate_image;
+use core_ai\aiactions\generate_text;
+use core_ai\aiactions\summarise_text;
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\approved_userlist;
@@ -116,9 +120,9 @@ class provider implements
                     ON aar.contextid = ctx.id
                   JOIN {ai_action_generate_text} aagt
                     ON aagt.id = aar.actionid
-                 WHERE aar.actionname = 'generate_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid";
-        $contextlist->add_from_sql($sql, ['userid' => $userid]);
+        $contextlist->add_from_sql($sql, ['userid' => $userid, 'actionname' => generate_text::class]);
 
         // AI action generate image.
         $sql = "SELECT DISTINCT ctx.id
@@ -127,9 +131,9 @@ class provider implements
                     ON aar.contextid = ctx.id
                   JOIN {ai_action_generate_image} aagi
                     ON aagi.id = aar.actionid
-                 WHERE aar.actionname = 'generate_image'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid";
-        $contextlist->add_from_sql($sql, ['userid' => $userid]);
+        $contextlist->add_from_sql($sql, ['userid' => $userid, 'actionname' => generate_image::class]);
 
         // AI action summarise text.
         $sql = "SELECT DISTINCT ctx.id
@@ -138,9 +142,9 @@ class provider implements
                     ON aar.contextid = ctx.id
                   JOIN {ai_action_summarise_text} aast
                     ON aast.id = aar.actionid
-                 WHERE aar.actionname = 'summarise_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid";
-        $contextlist->add_from_sql($sql, ['userid' => $userid]);
+        $contextlist->add_from_sql($sql, ['userid' => $userid, 'actionname' => summarise_text::class]);
 
         // AI action explain text.
         $sql = "SELECT DISTINCT ctx.id
@@ -149,9 +153,9 @@ class provider implements
                     ON aar.contextid = ctx.id
                   JOIN {ai_action_explain_text} aaet
                     ON aaet.id = aar.actionid
-                 WHERE aar.actionname = 'explain_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid";
-        $contextlist->add_from_sql($sql, ['userid' => $userid]);
+        $contextlist->add_from_sql($sql, ['userid' => $userid, 'actionname' => explain_text::class]);
 
         return $contextlist;
     }
@@ -201,11 +205,12 @@ class provider implements
                     ON aar.actionid = aagt.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'generate_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid
                        AND ctx.id " . $contextsql;
         $params = [
             'userid' => $userid,
+            'actionname' => generate_text::class,
         ];
         $params += $contextparams;
         $textgeneratedetails = $DB->get_recordset_sql($sql, $params);
@@ -245,11 +250,12 @@ class provider implements
                     ON aar.actionid = aagi.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'generate_image'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid
                        AND ctx.id " . $contextsql;
         $params = [
             'userid' => $userid,
+            'actionname' => generate_image::class,
         ];
         $params += $contextparams;
         $imagegeneratedetails = $DB->get_recordset_sql($sql, $params);
@@ -290,11 +296,12 @@ class provider implements
                     ON aar.actionid = aast.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'summarise_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid
                        AND ctx.id " . $contextsql;
         $params = [
             'userid' => $userid,
+            'actionname' => summarise_text::class,
         ];
         $params += $contextparams;
         $textsummarisedetails = $DB->get_recordset_sql($sql, $params);
@@ -334,11 +341,12 @@ class provider implements
                     ON aar.actionid = aaet.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'explain_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid
                        AND ctx.id " . $contextsql;
         $params = [
             'userid' => $userid,
+            'actionname' => explain_text::class,
         ];
         $params += $contextparams;
         $textexplaindetails = $DB->get_recordset_sql($sql, $params);
@@ -399,10 +407,11 @@ class provider implements
                     ON aar.actionid = aagt.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'generate_text'
+                 WHERE aar.actionname = :actionname
                        AND ctx.id = :contextid";
         $params = [
             'contextid' => $context->id,
+            'actionname' => generate_text::class,
         ];
         $aagtids = $DB->get_records_sql_menu($sql, $params);
         if ($aagtids) {
@@ -423,10 +432,11 @@ class provider implements
                     ON aar.actionid = aagi.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'generate_image'
+                 WHERE aar.actionname = :actionname
                        AND ctx.id = :contextid";
         $params = [
             'contextid' => $context->id,
+            'actionname' => generate_image::class,
         ];
         $aagiids = $DB->get_records_sql_menu($sql, $params);
         if ($aagiids) {
@@ -446,10 +456,11 @@ class provider implements
                     ON aar.actionid = aast.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'summarise_text'
+                 WHERE aar.actionname = :actionname
                        AND ctx.id = :contextid";
         $params = [
             'contextid' => $context->id,
+            'actionname' => summarise_text::class,
         ];
         $aastids = $DB->get_records_sql_menu($sql, $params);
         if ($aastids) {
@@ -470,10 +481,11 @@ class provider implements
                     ON aar.actionid = aaet.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'explain_text'
+                 WHERE aar.actionname = :actionname
                        AND ctx.id = :contextid";
         $params = [
             'contextid' => $context->id,
+            'actionname' => explain_text::class,
         ];
         $aaetids = $DB->get_records_sql_menu($sql, $params);
         if ($aaetids) {
@@ -525,9 +537,10 @@ class provider implements
                     ON aar.actionid = aagt.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'generate_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid
                        AND ctx.id " . $contextsql;
+        $params['actionname'] = generate_text::class;
         $textgeneratedetails = $DB->get_recordset_sql($sql, $params);
         $aagtids = [];
         foreach ($textgeneratedetails as $textgeneratedetail) {
@@ -552,9 +565,10 @@ class provider implements
                     ON aar.actionid = aagi.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'generate_image'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid
                        AND ctx.id " . $contextsql;
+        $params['actionname'] = generate_image::class;
         $imagegeneratedetails = $DB->get_recordset_sql($sql, $params);
         $aagiids = [];
         foreach ($imagegeneratedetails as $imagegeneratedetail) {
@@ -578,9 +592,10 @@ class provider implements
                     ON aar.actionid = aast.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'summarise_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid
                        AND ctx.id " . $contextsql;
+        $params['actionname'] = summarise_text::class;
         $textsummarisedetails = $DB->get_recordset_sql($sql, $params);
         $aastids = [];
         foreach ($textsummarisedetails as $textsummarisedetail) {
@@ -605,9 +620,10 @@ class provider implements
                     ON aar.actionid = aaet.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'explain_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.userid = :userid
                        AND ctx.id " . $contextsql;
+        $params['actionname'] = explain_text::class;
         $textexplaindetails = $DB->get_recordset_sql($sql, $params);
         $aaetids = [];
         foreach ($textexplaindetails as $textexplaindetail) {
@@ -649,9 +665,9 @@ class provider implements
                     ON aar.contextid = ctx.id
                   JOIN {ai_action_generate_text} aagt
                     ON aagt.id = aar.actionid
-                 WHERE aar.actionname = 'generate_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.contextid = :contextid";
-        $userlist->add_from_sql('userid', $sql, ['contextid' => $context->id]);
+        $userlist->add_from_sql('userid', $sql, ['contextid' => $context->id, 'actionname' => generate_text::class]);
 
         // AI action generate image.
         $sql = "SELECT DISTINCT aar.userid
@@ -660,9 +676,9 @@ class provider implements
                     ON aar.contextid = ctx.id
                   JOIN {ai_action_generate_image} aagi
                     ON aagi.id = aar.actionid
-                 WHERE aar.actionname = 'generate_image'
+                 WHERE aar.actionname = :actionname
                        AND aar.contextid = :contextid";
-        $userlist->add_from_sql('userid', $sql, ['contextid' => $context->id]);
+        $userlist->add_from_sql('userid', $sql, ['contextid' => $context->id, 'actionname' => generate_image::class]);
 
         // AI action summarise text.
         $sql = "SELECT DISTINCT aar.userid
@@ -671,9 +687,9 @@ class provider implements
                     ON aar.contextid = ctx.id
                   JOIN {ai_action_summarise_text} aast
                     ON aast.id = aar.actionid
-                 WHERE aar.actionname = 'summarise_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.contextid = :contextid";
-        $userlist->add_from_sql('userid', $sql, ['contextid' => $context->id]);
+        $userlist->add_from_sql('userid', $sql, ['contextid' => $context->id, 'actionname' => summarise_text::class]);
 
         // AI action explain text.
         $sql = "SELECT DISTINCT aar.userid
@@ -682,9 +698,9 @@ class provider implements
                     ON aar.contextid = ctx.id
                   JOIN {ai_action_explain_text} aaet
                     ON aaet.id = aar.actionid
-                 WHERE aar.actionname = 'explain_text'
+                 WHERE aar.actionname = :actionname
                        AND aar.contextid = :contextid";
-        $userlist->add_from_sql('userid', $sql, ['contextid' => $context->id]);
+        $userlist->add_from_sql('userid', $sql, ['contextid' => $context->id, 'actionname' => explain_text::class]);
     }
 
     /**
@@ -723,9 +739,10 @@ class provider implements
                     ON aar.actionid = aagt.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'generate_text'
+                 WHERE aar.actionname = :actionname
                        AND ctx.id = :contextid
                        AND aar.userid " . $useridssql;
+        $params['actionname'] = generate_text::class;
         $aagtids = $DB->get_records_sql_menu($sql, $params);
         if ($aagtids) {
             [$aagtidsql, $aagtidparams] = $DB->get_in_or_equal(array_keys($aagtids), SQL_PARAMS_NAMED);
@@ -745,9 +762,10 @@ class provider implements
                     ON aar.actionid = aagi.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'generate_image'
+                 WHERE aar.actionname = :actionname
                        AND ctx.id = :contextid
                        AND aar.userid " . $useridssql;
+        $params['actionname'] = generate_image::class;
         $aagiids = $DB->get_records_sql_menu($sql, $params);
         if ($aagiids) {
             [$aagiidsql, $aagiidparams] = $DB->get_in_or_equal(array_keys($aagiids), SQL_PARAMS_NAMED);
@@ -766,9 +784,10 @@ class provider implements
                     ON aar.actionid = aast.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'summarise_text'
+                 WHERE aar.actionname = :actionname
                        AND ctx.id = :contextid
                        AND aar.userid " . $useridssql;
+        $params['actionname'] = summarise_text::class;
         $aastids = $DB->get_records_sql_menu($sql, $params);
         if ($aastids) {
             [$aastidsql, $aastidparams] = $DB->get_in_or_equal(array_keys($aastids), SQL_PARAMS_NAMED);
@@ -788,9 +807,10 @@ class provider implements
                     ON aar.actionid = aaet.id
                   JOIN {context} ctx
                     ON aar.contextid = ctx.id
-                 WHERE aar.actionname = 'explain_text'
+                 WHERE aar.actionname = :actionname
                        AND ctx.id = :contextid
                        AND aar.userid " . $useridssql;
+        $params['actionname'] = explain_text::class;
         $aaetids = $DB->get_records_sql_menu($sql, $params);
         if ($aaetids) {
             [$aaetidsql, $aaetidparams] = $DB->get_in_or_equal(array_keys($aaetids), SQL_PARAMS_NAMED);

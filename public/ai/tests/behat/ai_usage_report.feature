@@ -17,11 +17,11 @@ Feature: AI usage report displays recorded AI data
       | provider          | name             | enabled | apikey | orgid |
       | aiprovider_openai | OpenAI API test  | 1       | 123    | abc   |
     And the following "core_ai > ai actions" exist:
-      | actionname     | user     | success | provider           | contextid | prompttokens | completiontokens |
-      | generate_text  | student1 | 1       | aiprovider_openai  | 1         | 22           | 33               |
-      | summarise_text | student1 | 0       | aiprovider_openai  | 1         |              |                  |
-      | explain_text   | student1 | 1       | aiprovider_openai  | 1         | 44           | 55               |
-      | generate_image | student2 | 1       | aiprovider_azureai | 1         |              |                  |
+      | actionname                              | user     | success | provider           | contextid | prompttokens | completiontokens |
+      | core_ai\aiactions\generate_text         | student1 | 1       | aiprovider_openai  | 1         | 22           | 33               |
+      | core_ai\aiactions\summarise_text        | student1 | 0       | aiprovider_openai  | 1         |              |                  |
+      | core_ai\aiactions\explain_text          | student1 | 1       | aiprovider_openai  | 1         | 44           | 55               |
+      | core_ai\aiactions\generate_image        | student2 | 1       | aiprovider_azureai | 1         |              |                  |
 
   Scenario: Managers can view the AI usage report
     Given I am logged in as "manager1"

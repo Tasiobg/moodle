@@ -62,7 +62,7 @@ class response_summarise_text extends response_base {
     ) {
         parent::__construct(
             success: $success,
-            actionname: 'summarise_text',
+            actionname: \core_ai\aiactions\summarise_text::class,
             errorcode: $errorcode,
             error: $error,
             errormessage: $errormessage,
