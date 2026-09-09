@@ -96,6 +96,6 @@ final class process_explain_text_test extends \advanced_testcase {
 
         $result = $method->invoke($processor, $response);
         $this->assertTrue($result->get_success());
-        $this->assertEquals('explain_text', $result->get_actionname());
+        $this->assertEquals(\core_ai\aiactions\explain_text::class, $result->get_actionname());
     }
 }

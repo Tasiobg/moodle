@@ -61,7 +61,8 @@ class utils {
             && (!$checkcontext || $manager->is_action_enabled_in_context($context, summarise_text::class))
         ) {
             $actions[] = [
-                'action' => 'summarise_text',
+                'action' => summarise_text::class,
+                'basename' => summarise_text::get_basename(),
                 'buttontext' => get_string('summarise', 'aiplacement_courseassist'),
                 'title' => get_string('summarise_tooltips', 'aiplacement_courseassist'),
             ];
@@ -74,7 +75,8 @@ class utils {
             && (!$checkcontext || $manager->is_action_enabled_in_context($context, explain_text::class))
         ) {
             $actions[] = [
-                'action' => 'explain_text',
+                'action' => explain_text::class,
+                'basename' => explain_text::get_basename(),
                 'buttontext' => get_string('explain', 'aiplacement_courseassist'),
                 'title' => get_string('explain_tooltips', 'aiplacement_courseassist'),
             ];

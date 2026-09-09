@@ -51,12 +51,18 @@ class core_ai_generator extends component_generator_base {
             $data['contextid'] = \context_course::instance($data['courseid'])->id;
         }
 
+        if (!str_contains($data['actionname'], '\\')) {
+            throw new Exception('\'actionname\' must be a fully qualified AI action class name');
+        }
+        $data['actionname'] = ltrim($data['actionname'], '\\');
+        $basename = substr($data['actionname'], (strrpos($data['actionname'], '\\') + 1));
+
         // Create the child action record.
         $child = new stdClass();
         $child->prompt = 'Prompt text';
 
         // Generate image actions need to be structured differently.
-        if ($data['actionname'] === 'generate_image') {
+        if ($basename === 'generate_image') {
             $child->numberimages = 1;
             $child->quality = 'hd';
             $child->aspectratio = 'landscape';
@@ -77,7 +83,7 @@ class core_ai_generator extends component_generator_base {
             unset($child->revisedprompt);
             unset($data['prompttokens']);
             unset($data['completiontokens']);
-        } else if ($data['actionname'] !== 'generate_image') {
+        } else if ($basename !== 'generate_image') {
             // Token counts describe the AI provider call, so they are stored on the register record.
             $data['prompttokens'] = $data['prompttokens'] ?? 111;
             $data['completiontokens'] = $data['completiontokens'] ?? 222;
@@ -86,7 +92,7 @@ class core_ai_generator extends component_generator_base {
             unset($data['completiontokens']);
         }
 
-        $childid = $DB->insert_record("ai_action_{$data['actionname']}", $child);
+        $childid = $DB->insert_record("ai_action_{$basename}", $child);
 
         // Finalise some fields before inserting.
         $data['actionid'] = $childid;

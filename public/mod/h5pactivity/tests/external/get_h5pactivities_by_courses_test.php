@@ -50,7 +50,10 @@ final class get_h5pactivities_by_courses_test extends \core_external\tests\exter
         $activities[0]->filename = 'filltheblanks.h5p';
         $context = context_module::instance($activities[0]->cmid);
         $activities[0]->contextid = $context->id;
-        $activities[0]->enabledaiactions = '{"summarise_text":1,"explain_text":0}';
+        $activities[0]->enabledaiactions = json_encode([
+            \core_ai\aiactions\summarise_text::class => 1,
+            \core_ai\aiactions\explain_text::class => 0,
+        ]);
         $DB->set_field('course_modules', 'enabledaiactions', $activities[0]->enabledaiactions, ['id' => $activities[0]->cmid]);
 
         $params = [

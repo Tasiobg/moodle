@@ -62,7 +62,7 @@ class response_explain_text extends response_base {
     ) {
         parent::__construct(
             success: $success,
-            actionname: 'explain_text',
+            actionname: \core_ai\aiactions\explain_text::class,
             errorcode: $errorcode,
             error: $error,
             errormessage: $errormessage,

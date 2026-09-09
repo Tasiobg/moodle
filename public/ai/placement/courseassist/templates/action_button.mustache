@@ -18,6 +18,7 @@
     @template aiplacement_courseassist/action_button
     * isdropdown - Is this a dropdown item
     * actions - The action being performed
+    * basename - The basename of the action class
     * buttontext - The text to display for the button
     * title - The tooltip/title text to use
 
@@ -26,7 +27,8 @@
     Example context (json):
     {
         "isdropdown": true,
-        "action": "explain_text",
+        "action": "core_ai\\aiactions\\explain_text",
+        "basename": "explain_text",
         "buttontext": "Explain",
         "title": "Create an AI-generated explanation of the page content"
     }
@@ -35,7 +37,7 @@
     class="{{#isdropdown}}dropdown-item{{/isdropdown}}{{^isdropdown}}btn btn-outline-secondary{{/isdropdown}} ai-action"
     type="button"
     title="{{title}}"
-    data-action="{{action}}"
+    data-action="{{basename}}"
     data-bs-toggle="tooltip"
     data-bs-placement="right"
     aria-controls="ai-drawer"

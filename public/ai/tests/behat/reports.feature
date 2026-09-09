@@ -12,9 +12,8 @@ Feature: AI reports
       | user     | role    | contextlevel | reference |
       | manager1 | manager | System       |           |
     And the following config values are set as admin:
-      | enabled        | 1 | aiplacement_editor |
-      | generate_text  | 1 | aiplacement_editor |
-      | generate_image | 0 | aiplacement_editor |
+      | enabled        | 1                                                                          | aiplacement_editor |
+      | enabledactions | {"core_ai\\\\aiactions\\\\generate_text":1,"core_ai\\\\aiactions\\\\generate_image":0} | aiplacement_editor |
     And the following "core_ai > ai providers" exist:
       |provider          | name             | enabled | apikey | orgid |
       |aiprovider_openai | OpenAI API test  | 1       | 123    | abc   |

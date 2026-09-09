@@ -89,7 +89,8 @@ class utils {
         // Action generate_text.
         if (self::is_html_editor_placement_action_available($context, 'generate_text', generate_text::class, $checkcontext)) {
             $actions[] = [
-                'action' => 'generate_text',
+                'action' => generate_text::class,
+                'basename' => generate_text::get_basename(),
                 'buttontext' => get_string('action_generate_text', 'core_ai'),
                 'title' => get_string('action_generate_text_desc', 'core_ai'),
             ];
@@ -98,7 +99,8 @@ class utils {
         // Action generate_image.
         if (self::is_html_editor_placement_action_available($context, 'generate_image', generate_image::class, $checkcontext)) {
             $actions[] = [
-                'action' => 'generate_image',
+                'action' => generate_image::class,
+                'basename' => generate_image::get_basename(),
                 'buttontext' => get_string('action_generate_image', 'core_ai'),
                 'title' => get_string('action_generate_image_desc', 'core_ai'),
             ];

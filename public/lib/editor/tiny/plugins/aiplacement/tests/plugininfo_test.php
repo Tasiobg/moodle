@@ -47,13 +47,13 @@ final class plugininfo_test extends advanced_testcase {
         );
         $aimanager->set_action_state(
             plugin: $aiprovider->provider,
-            actionbasename: \core_ai\aiactions\generate_text::class::get_basename(),
+            actionclass: \core_ai\aiactions\generate_text::class,
             enabled: 1,
             instanceid: $aiprovider->id
         );
         $aimanager->set_action_state(
             plugin: $aiprovider->provider,
-            actionbasename: \core_ai\aiactions\generate_image::class::get_basename(),
+            actionclass: \core_ai\aiactions\generate_image::class,
             enabled: 1,
             instanceid: $aiprovider->id
         );

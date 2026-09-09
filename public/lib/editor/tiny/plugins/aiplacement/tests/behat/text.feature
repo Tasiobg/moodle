@@ -74,12 +74,12 @@ Feature: Generate text using AI
   @javascript
   Scenario: Text generation using AI is not available if placement action is not enabled
     Given the following config values are set as admin:
-      | generate_text |  | aiplacement_editor |
+      | enabledactions | {"core_ai\\\\aiactions\\\\generate_text":0,"core_ai\\\\aiactions\\\\generate_image":1} | aiplacement_editor |
     When I am on the "PageName2" "page activity" page logged in as teacher1
     And I navigate to "Settings" in current page administration
     Then "AI generate text" button should not exist in the "Description" TinyMCE editor
     And the following config values are set as admin:
-      | generate_text | 1 | aiplacement_editor |
+      | enabledactions | {"core_ai\\\\aiactions\\\\generate_text":1,"core_ai\\\\aiactions\\\\generate_image":1} | aiplacement_editor |
     And I am on the "PageName2" "page activity" page logged in as teacher1
     And I navigate to "Settings" in current page administration
     And "AI generate text" button should exist in the "Description" TinyMCE editor
@@ -87,7 +87,7 @@ Feature: Generate text using AI
   @javascript
   Scenario: Text generation using AI is not available if provider action is not enabled and placement action is enabled
     Given the following config values are set as admin:
-      | generate_text |  | aiplacement_editor |
+      | enabledactions | {"core_ai\\\\aiactions\\\\generate_text":0,"core_ai\\\\aiactions\\\\generate_image":1} | aiplacement_editor |
     And I set the following action configuration for ai provider with name "openai":
       | action          | enabled |
       | generate_text   | 0       |
@@ -95,7 +95,7 @@ Feature: Generate text using AI
     And I navigate to "Settings" in current page administration
     Then "AI generate text" button should not exist in the "Description" TinyMCE editor
     And the following config values are set as admin:
-      | generate_text | 1 | aiplacement_editor |
+      | enabledactions | {"core_ai\\\\aiactions\\\\generate_text":1,"core_ai\\\\aiactions\\\\generate_image":1} | aiplacement_editor |
     And I am on the "PageName2" "page activity" page logged in as teacher1
     And I navigate to "Settings" in current page administration
     And "AI generate text" button should not exist in the "Description" TinyMCE editor

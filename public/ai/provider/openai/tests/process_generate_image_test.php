@@ -266,7 +266,7 @@ final class process_generate_image_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertTrue($result->get_success());
-        $this->assertEquals('generate_image', $result->get_actionname());
+        $this->assertEquals(\core_ai\aiactions\generate_image::class, $result->get_actionname());
         $this->assertEquals($response['success'], $result->get_success());
         $this->assertEquals($response['revisedprompt'], $result->get_response_data()['revisedprompt']);
         $this->assertEquals($response['model'], $result->get_response_data()['model']);
@@ -292,7 +292,7 @@ final class process_generate_image_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertFalse($result->get_success());
-        $this->assertEquals('generate_image', $result->get_actionname());
+        $this->assertEquals(\core_ai\aiactions\generate_image::class, $result->get_actionname());
         $this->assertEquals($response['errorcode'], $result->get_errorcode());
         $this->assertEquals($response['errormessage'], $result->get_errormessage());
     }
@@ -367,7 +367,7 @@ final class process_generate_image_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertTrue($result->get_success());
-        $this->assertEquals('generate_image', $result->get_actionname());
+        $this->assertEquals(\core_ai\aiactions\generate_image::class, $result->get_actionname());
         $this->assertEquals('An image that represents the concept of a \'test\'.', $result->get_response_data()['revisedprompt']);
         $this->assertInstanceOf(\stored_file::class, $result->get_response_data()['draftfile']);
     }
@@ -394,7 +394,7 @@ final class process_generate_image_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertFalse($result->get_success());
-        $this->assertEquals('generate_image', $result->get_actionname());
+        $this->assertEquals(\core_ai\aiactions\generate_image::class, $result->get_actionname());
         $this->assertEquals(401, $result->get_errorcode());
         $this->assertEquals('Invalid Authentication', $result->get_errormessage());
     }

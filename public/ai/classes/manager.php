@@ -18,7 +18,11 @@ namespace core_ai;
 
 use core\exception\coding_exception;
 use core_ai\aiactions\base;
+use core_ai\aiactions\explain_text;
+use core_ai\aiactions\generate_image;
+use core_ai\aiactions\generate_text;
 use core_ai\aiactions\responses;
+use core_ai\aiactions\summarise_text;
 use core\plugininfo\aiprovider as aiproviderplugin;
 /**
  * AI subsystem manager.
@@ -28,14 +32,6 @@ use core\plugininfo\aiprovider as aiproviderplugin;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class manager {
-
-    /** @var string[] Recognised action basenames, each backed by its own 'ai_action_<name>' table. */
-    private const ACTION_TABLES = [
-        'generate_text',
-        'summarise_text',
-        'explain_text',
-        'generate_image',
-    ];
 
     /**
      * Create a new AI manager.
@@ -172,7 +168,7 @@ class manager {
      * @return responses\response_base The result of the action.
      */
     protected function call_action_provider(provider $provider, base $action): responses\response_base {
-        $classname = 'process_' . $action->get_basename();
+        $classname = 'process_' . $action::get_basename();
         $classpath = substr($provider::class, 0, strpos($provider::class, '\\') + 1);
         $processclass = $classpath . $classname;
         $processor = new $processclass($provider, $action);
@@ -189,9 +185,9 @@ class manager {
      * @return responses\response_base The result of the action.
      */
     public function process_action(base $action): responses\response_base {
-        // Get the action response_base name.
+        // Get the action response_base class name.
         $actionname = $action::class;
-        $responseclassname = 'core_ai\\aiactions\\responses\\response_' . $action->get_basename();
+        $responseclassname = $action::get_response_classname();
 
         // Get the providers that support the action.
         $providers = $this->get_providers_for_actions([$actionname], true);
@@ -243,7 +239,7 @@ class manager {
 
         // Store the action result.
         $record = (object) [
-            'actionname' => $action->get_basename(),
+            'actionname' => $action::class,
             'success' => $response->get_success(),
             'userid' => $action->get_configuration('userid'),
             'contextid' => $contextid,
@@ -322,13 +318,14 @@ class manager {
             return null;
         }
 
-        // Only join to a per-action-type table for recognised action basenames, to avoid building a table
-        // name directly from a database value.
-        if (in_array($record->actionname, self::ACTION_TABLES, true)) {
-            $record->typedata = $DB->get_record('ai_action_' . $record->actionname, ['id' => $record->actionid]) ?: null;
-        } else {
-            $record->typedata = null;
-        }
+        // Only query per-action-type tables for recognised action classes.
+        $record->typedata = match ($record->actionname) {
+            generate_text::class => $DB->get_record('ai_action_generate_text', ['id' => $record->actionid]) ?: null,
+            summarise_text::class => $DB->get_record('ai_action_summarise_text', ['id' => $record->actionid]) ?: null,
+            explain_text::class => $DB->get_record('ai_action_explain_text', ['id' => $record->actionid]) ?: null,
+            generate_image::class => $DB->get_record('ai_action_generate_image', ['id' => $record->actionid]) ?: null,
+            default => null,
+        };
 
         return $record;
     }
@@ -372,18 +369,21 @@ class manager {
      * Set the action state for a given plugin.
      *
      * @param string $plugin The name of the plugin.
-     * @param string $actionbasename The action to be set.
+     * @param string $actionclass The fully qualified action class name to be set.
      * @param int $enabled The state to be set (e.g., enabled or disabled).
      * @param int $instanceid The instance id of the instance.
      * @return bool Returns true if the configuration was successfully set, false otherwise.
      */
     public function set_action_state(
         string $plugin,
-        string $actionbasename,
+        string $actionclass,
         int $enabled,
         int $instanceid = 0
     ): bool {
-        $actionclass = 'core_ai\\aiactions\\' . $actionbasename;
+        if (!class_exists($actionclass) || !is_a($actionclass, base::class, true)) {
+            throw new coding_exception("Action class does not exist or is not valid: {$actionclass}");
+        }
+
         $oldvalue = $this->is_action_enabled($plugin, $actionclass, $instanceid);
 
         // Check if we are setting an action for a provider or placement.
@@ -394,22 +394,30 @@ class manager {
 
             // Update the enabled state of the action.
             $actionconfig = $provider->actionconfig;
-            $actionconfig[$actionclass]['enabled'] = (bool)$enabled;
+            $actionconfig[$actionclass]['enabled'] = (bool) $enabled;
 
             return $this->update_provider_instance(
                 provider: $provider,
-                actionconfig: $actionconfig)->actionconfig[$actionclass]['enabled'];
+                actionconfig: $actionconfig,
+            )->actionconfig[$actionclass]['enabled'];
 
         } else {
             // Handle placement actions.
             // Only set value if there is no config setting or if the value is different from the previous one.
-            if ($oldvalue !== (bool)$enabled) {
-                set_config($actionbasename, $enabled, $plugin);
-                add_to_config_log('disabled', !$oldvalue, !$enabled, $plugin);
-                \core_plugin_manager::reset_caches();
-                return true;
+            if ($oldvalue === (bool) $enabled) {
+                return false;
             }
-            return false;
+
+            $enabledactions = get_config($plugin, 'enabledactions');
+            $enabledactions = $enabledactions ? (array) json_decode($enabledactions, true) : [];
+            $oldjson = json_encode($enabledactions);
+            $enabledactions[$actionclass] = (int) $enabled;
+            $newjson = json_encode($enabledactions);
+            set_config('enabledactions', $newjson, $plugin);
+            add_to_config_log('enabledactions', $oldjson, $newjson, $plugin);
+            \core_plugin_manager::reset_caches();
+
+            return true;
         }
     }
 
@@ -454,12 +462,16 @@ class manager {
             return $this->is_provider_action_enabled($plugin, $actionclass, $instanceid);
         } else {
             // Handle placement actions.
-            $value = get_config($plugin, $actionclass::get_basename());
-            // If not exist in DB, set it to true (enabled).
-            if ($value === false) {
+            $enabledactions = get_config($plugin, 'enabledactions');
+            // If no enabledactions config exists, default to enabled.
+            if ($enabledactions === false) {
                 return true;
             }
-            return (bool) $value;
+            $enabledactions = json_decode($enabledactions, true);
+            if (!is_array($enabledactions) || !array_key_exists($actionclass, $enabledactions)) {
+                return true;
+            }
+            return (bool) $enabledactions[$actionclass];
         }
     }
 
@@ -868,19 +880,36 @@ class manager {
         if (is_null($record->enableaitools) || $record->enableaitools) {
             // Get AI action settings and determine which ones are enabled.
             if (!empty($record->enabledaiactions)) {
-                $enabledaiactions = array_keys(
-                    array_filter((array) json_decode($record->enabledaiactions), function ($value): bool {
-                        return $value == 1;
-                    })
-                );
-                // Set to classname format.
-                foreach ($enabledaiactions as $key => $action) {
-                    $enabledaiactions[$key] = "core_ai\\aiactions\\{$action}";
-                }
+                $enabledaiactions = self::get_enabled_actions_from_json($record->enabledaiactions);
             }
         }
 
         return $enabledaiactions;
+    }
+
+    /**
+     * Get enabled AI action classes from stored course module JSON.
+     *
+     * @param string $enabledaiactions The encoded action settings.
+     * @return array The enabled action class names.
+     */
+    public static function get_enabled_actions_from_json(string $enabledaiactions): array {
+        $actions = json_decode($enabledaiactions, true);
+        if (!is_array($actions)) {
+            return [];
+        }
+
+        return array_keys(array_filter($actions, fn($value): bool => $value == 1));
+    }
+
+    /**
+     * Get a form-safe field name for an AI action.
+     *
+     * @param string $actionclass The fully qualified action class name.
+     * @return string The form field name.
+     */
+    public static function get_action_form_field_name(string $actionclass): string {
+        return 'action-' . str_replace('\\', '--', ltrim($actionclass, '\\'));
     }
 
     /**
