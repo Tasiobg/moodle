@@ -77,12 +77,35 @@ class behat_core_ai extends behat_base {
         foreach ($rows as $row) {
             $action = 'core_ai\\aiactions\\' . $row['action'];
             $actiondata[$action]['enabled'] = $row['enabled'];
-            unset ($row['action'], $row['enabled']);
+            unset($row['action'], $row['enabled']);
             $actiondata[$action]['settings'] = $row;
         }
         $manager->update_provider_instance(
             provider: $provider,
             actionconfig: $actiondata
         );
+    }
+
+    /**
+     * Set action configuration for AI placement plugins.
+     *
+     * @Given /^I set the following action configuration for the "(?P<pluginname>(?:[^"]|\\")*)" placement plugin:$/
+     *
+     * @param string $pluginname
+     * @param TableNode $data
+     */
+    #[\core\attribute\example('I set the following action configuration for the "aiplacement_editor" placement plugin:
+        | action                           | enabled |
+        | core_ai\aiactions\generate_text  | 0       |
+        | core_ai\aiactions\generate_image | 1       |')]
+    public function configure_placement_action(string $pluginname, TableNode $data): void {
+        $manager = \core\di::get(\core_ai\manager::class);
+        foreach ($data->getHash() as $row) {
+            $manager->set_action_state(
+                plugin: $pluginname,
+                actionclass: $row['action'],
+                enabled: (int) $row['enabled'],
+            );
+        }
     }
 }

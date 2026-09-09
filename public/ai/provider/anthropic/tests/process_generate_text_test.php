@@ -17,6 +17,7 @@
 namespace aiprovider_anthropic;
 
 use core_ai\aiactions\base;
+use core_ai\aiactions\generate_text;
 use core_ai\provider;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -452,7 +453,7 @@ final class process_generate_text_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertTrue($result->get_success());
-        $this->assertEquals('generate_text', $result->get_actionname());
+        $this->assertEquals(generate_text::class, $result->get_actionname());
         $this->assertEquals($response['generatedcontent'], $result->get_response_data()['generatedcontent']);
         $this->assertEquals($response['model'], $result->get_response_data()['model']);
     }

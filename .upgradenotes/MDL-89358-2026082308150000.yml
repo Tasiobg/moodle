@@ -1,0 +1,50 @@
+issueNumber: MDL-89358
+notes:
+  core_ai:
+    - message: >-
+        AI actions are now identified by their fully-qualified class name (for
+        example `core_ai\aiactions\generate_text`) instead of their short
+        basename (`generate_text`). This affects:
+
+
+        * the `ai_action_register.actionname` database field, which has been
+        widened from 100 to 255 characters
+
+        * AI placement configuration keys
+
+        * the value returned by `response_base::get_actionname()`
+
+        * the `plugin` parameter of the external function `core_ai_set_action`,
+        which now contains the fully-qualified class name after the plugin name
+
+
+        `\core_ai\manager::set_action_state()` now requires the fully-qualified
+        class name via its renamed `$actionclass` parameter, and throws a
+        coding_exception when given an invalid class name. AI provider instance
+        `actionconfig` keys already used fully-qualified class names before this
+        change and do not require migration.
+
+
+        Existing `ai_action_register` records, AI placement configuration, and
+        course module `enabledaiactions` configuration are migrated automatically
+        during upgrade.
+
+
+        Third-party providers and placements using hard-coded action basenames
+        will break unless updated: SQL queries against
+        `ai_action_register.actionname` will no longer match migrated records,
+        and placement `get_config()`/`set_config()` calls using legacy basename
+        keys will no longer resolve. Placement action states are now stored in
+        the `enabledactions` JSON configuration, keyed by fully-qualified class
+        name. Provider `actionconfig` arrays must continue to use fully-qualified
+        class names as keys.
+      type: changed
+    - message: >-
+        Third-party AI provider and placement plugins can now register action
+        classes from any namespace, not only `core_ai\aiactions`. Actions are
+        resolved by their fully-qualified class name, so custom action classes
+        are autoloaded and unambiguously identified. Activity forms resolve
+        action help strings from the action class's component. Custom actions
+        should define `action_<basename>_help` in their component language file,
+        or override `get_language_component()` and `get_help_string_id()`.
+      type: improved

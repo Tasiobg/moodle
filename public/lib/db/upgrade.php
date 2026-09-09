@@ -2452,5 +2452,60 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2026102600.00);
     }
 
+    if ($oldversion < 2026112400.01) {
+        upgrade_set_timeout();
+
+        // Define table ai_action_register.
+        $table = new xmldb_table('ai_action_register');
+
+        // Drop the indexes using the actionname field, they will be recreated below.
+        $index = new xmldb_index('action', XMLDB_INDEX_UNIQUE, ['actionname', 'actionid']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+        $index = new xmldb_index('provider', XMLDB_INDEX_NOTUNIQUE, ['actionname', 'provider']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Increase the actionname field length to store fully qualified class names.
+        $field = new xmldb_field('actionname', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null, 'id');
+        $dbman->change_field_precision($table, $field);
+
+        // Recreate the indexes dropped above.
+        $index = new xmldb_index('action', XMLDB_INDEX_UNIQUE, ['actionname', 'actionid']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        $index = new xmldb_index('provider', XMLDB_INDEX_NOTUNIQUE, ['provider']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        $pluginactions = [];
+        foreach (['aiprovider', 'aiplacement'] as $plugintype) {
+            $subclassname = $plugintype === 'aiprovider' ? 'provider' : 'placement';
+            foreach (\core\plugin_manager::instance()->get_plugins_of_type($plugintype) as $plugin) {
+                $component = "{$plugintype}_{$plugin->name}";
+                $classname = "\\{$component}\\{$subclassname}";
+                if (!class_exists($classname) || !method_exists($classname, 'get_action_list')) {
+                    continue;
+                }
+                foreach ($classname::get_action_list() as $actionclass) {
+                    $actionclass = ltrim($actionclass, '\\');
+                    if (!is_a($actionclass, \core_ai\aiactions\base::class, true)) {
+                        continue;
+                    }
+                    $pluginactions[$component][$actionclass] = $actionclass;
+                }
+            }
+        }
+
+        upgrade_ai_migrate_action_names($pluginactions);
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026112400.01);
+    }
+
     return true;
 }

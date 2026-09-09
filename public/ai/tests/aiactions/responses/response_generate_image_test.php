@@ -37,7 +37,7 @@ final class response_generate_image_test extends \advanced_testcase {
         );
 
         $this->assertTrue($actionresponse->get_success());
-        $this->assertEquals('generate_image', $actionresponse->get_actionname());
+        $this->assertEquals(\core_ai\aiactions\generate_image::class, $actionresponse->get_actionname());
     }
 
     /**

@@ -16,6 +16,8 @@
 
 namespace core_ai\task;
 
+use core_ai\aiactions\generate_text;
+
 /**
  * Test the backfill_action_courseid adhoc task.
  *
@@ -36,7 +38,7 @@ final class backfill_action_courseid_test extends \advanced_testcase {
         global $DB;
 
         return $DB->insert_record('ai_action_register', (object) [
-            'actionname' => 'generate_text',
+            'actionname' => generate_text::class,
             'actionid' => 1,
             'success' => 1,
             'userid' => 1,

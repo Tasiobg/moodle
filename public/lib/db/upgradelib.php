@@ -2377,3 +2377,134 @@ function moodlenet_migrate_profile_field(): void {
                      )";
     $DB->execute($sql, ['fieldid' => $field->id, 'fieldid2' => $field->id]);
 }
+
+/**
+ * Migrate AI action names from basenames to fully qualified class names.
+ *
+ * The available plugin action classes are passed in by the upgrade script so this helper
+ * does not depend on plugin APIs.
+ *
+ * @param array $pluginactions Plugin action map, keyed by component.
+ */
+function upgrade_ai_migrate_action_names(array $pluginactions): void {
+    global $DB;
+
+    $migrateregisterrows = static function (
+        string $basename,
+        string $classname,
+        ?string $provider = null,
+    ) use ($DB): void {
+        $select = 'actionname = :legacyactionname';
+        $params = ['legacyactionname' => $basename];
+        if ($provider !== null) {
+            $select .= ' AND provider = :provider';
+            $params['provider'] = $provider;
+        }
+        $DB->set_field_select('ai_action_register', 'actionname', $classname, $select, $params);
+    };
+
+    $legacyactionclasses = [
+        'generate_text' => \core_ai\aiactions\generate_text::class,
+        'generate_image' => \core_ai\aiactions\generate_image::class,
+        'summarise_text' => \core_ai\aiactions\summarise_text::class,
+        'explain_text' => \core_ai\aiactions\explain_text::class,
+    ];
+
+    $groupbybasename = static function (array $classnames): array {
+        $result = [];
+        foreach ($classnames as $classname) {
+            $basename = substr($classname, (strrpos($classname, '\\') + 1));
+            $result[$basename][$classname] = $classname;
+        }
+        return $result;
+    };
+    $pluginactionsbybasename = [];
+    foreach ($pluginactions as $component => $classnames) {
+        $pluginactionsbybasename[$component] = $groupbybasename($classnames);
+    }
+
+    foreach ($pluginactionsbybasename as $component => $pluginbasenamemap) {
+        if (!str_starts_with($component, 'aiprovider_')) {
+            continue;
+        }
+        foreach ($pluginbasenamemap as $basename => $classnames) {
+            if (count($classnames) === 1) {
+                $migrateregisterrows($basename, reset($classnames), $component);
+            }
+        }
+    }
+
+    foreach ($legacyactionclasses as $basename => $classname) {
+        $migrateregisterrows($basename, $classname);
+    }
+
+    foreach ($pluginactionsbybasename as $component => $pluginbasenamemap) {
+        if (!str_starts_with($component, 'aiplacement_')) {
+            continue;
+        }
+        $enabledactionsrecord = $DB->get_record('config_plugins', [
+            'plugin' => $component,
+            'name' => 'enabledactions',
+        ]);
+        $enabledactions = $enabledactionsrecord ? json_decode($enabledactionsrecord->value, true) : null;
+        $enabledactions = $enabledactions ? (array) $enabledactions : [];
+        $legacykeys = [];
+        foreach ($pluginbasenamemap as $legacykey => $classnames) {
+            $legacyrecord = $DB->get_record('config_plugins', [
+                'plugin' => $component,
+                'name' => $legacykey,
+            ]);
+            if (!$legacyrecord) {
+                continue;
+            }
+            foreach ($classnames as $actionclass) {
+                if (!array_key_exists($actionclass, $enabledactions)) {
+                    $enabledactions[$actionclass] = (int) $legacyrecord->value;
+                }
+            }
+            $legacykeys[] = $legacykey;
+        }
+        if ($legacykeys) {
+            set_config('enabledactions', json_encode($enabledactions), $component);
+            foreach ($legacykeys as $legacykey) {
+                unset_config($legacykey, $component);
+            }
+        }
+    }
+
+    $modules = $DB->get_recordset_select(
+        'course_modules',
+        'enabledaiactions IS NOT NULL',
+        [],
+        '',
+        'id, enabledaiactions',
+    );
+    foreach ($modules as $module) {
+        $enabledactions = json_decode($module->enabledaiactions, true);
+        if (!is_array($enabledactions)) {
+            continue;
+        }
+        $newenabledactions = $enabledactions;
+        $changed = false;
+        foreach ($enabledactions as $actionname => $enabled) {
+            if (str_contains($actionname, '\\')) {
+                continue;
+            }
+            $actionclass = "core_ai\\aiactions\\{$actionname}";
+            if (!array_key_exists($actionclass, $newenabledactions)) {
+                $newenabledactions[$actionclass] = $enabled;
+            }
+            unset($newenabledactions[$actionname]);
+            $changed = true;
+        }
+        if ($changed) {
+            $DB->set_field(
+                'course_modules',
+                'enabledaiactions',
+                json_encode($newenabledactions),
+                ['id' => $module->id],
+            );
+        }
+    }
+    $modules->close();
+}

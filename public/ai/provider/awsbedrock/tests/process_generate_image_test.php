@@ -24,6 +24,7 @@ use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\MockObject\MockObject;
 use core_ai\aiactions\base;
+use core_ai\aiactions\generate_image;
 
 defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/testcase_helper_trait.php');
@@ -439,7 +440,7 @@ final class process_generate_image_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertTrue($result->get_success());
-        $this->assertEquals('generate_image', $result->get_actionname());
+        $this->assertEquals(generate_image::class, $result->get_actionname());
         $this->assertEquals($response['success'], $result->get_success());
         $this->assertEquals($response['revisedprompt'], $result->get_response_data()['revisedprompt']);
         $this->assertEquals($response['model'], $result->get_response_data()['model']);
@@ -465,7 +466,7 @@ final class process_generate_image_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertFalse($result->get_success());
-        $this->assertEquals('generate_image', $result->get_actionname());
+        $this->assertEquals(generate_image::class, $result->get_actionname());
         $this->assertEquals($response['errorcode'], $result->get_errorcode());
         $this->assertEquals($response['errormessage'], $result->get_errormessage());
     }
@@ -501,7 +502,7 @@ final class process_generate_image_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertTrue($result->get_success());
-        $this->assertEquals('generate_image', $result->get_actionname());
+        $this->assertEquals(generate_image::class, $result->get_actionname());
         $this->assertEquals('This is a test prompt', $result->get_response_data()['revisedprompt']);
         $this->assertEquals('15a539ba5aa81f35.png', $result->get_response_data()['draftfile']->get_filename());
     }
@@ -520,7 +521,7 @@ final class process_generate_image_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertFalse($result->get_success());
-        $this->assertEquals('generate_image', $result->get_actionname());
+        $this->assertEquals(generate_image::class, $result->get_actionname());
         $this->assertEquals(403, $result->get_errorcode());
         $this->assertEquals('You do not have permission to invoke this model', $result->get_errormessage());
     }

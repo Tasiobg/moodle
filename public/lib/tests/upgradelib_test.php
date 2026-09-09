@@ -23,6 +23,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use aiplacement_editor\tests\aiactions\custom_action;
+use core_ai\aiactions\generate_text;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -43,6 +46,7 @@ require_once($CFG->dirroot . '/calendar/tests/helpers.php');
 #[\PHPUnit\Framework\Attributes\CoversFunction('moodlenet_migrate_profile_field')]
 #[\PHPUnit\Framework\Attributes\CoversFunction('upgrade_migrate_classic_theme_to_boost')]
 #[\PHPUnit\Framework\Attributes\CoversFunction('upgrade_penalty_calculation_freeze')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('upgrade_ai_migrate_action_names')]
 final class upgradelib_test extends advanced_testcase {
 
     /**
@@ -2306,5 +2310,77 @@ calendar,core_calendar|/calendar/view.php?view=month',
         upgrade_penalty_calculation_freeze();
 
         $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $course->id}));
+    }
+
+    /**
+     * Test migration of registered actions, placement settings, and course module settings.
+     */
+    public function test_upgrade_ai_migrate_action_names(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $clock = $this->mock_clock_with_frozen();
+        $user = self::getDataGenerator()->create_user();
+
+        $DB->insert_record('ai_action_register', (object) [
+            'actionname' => 'generate_text',
+            'actionid' => 741,
+            'success' => 0,
+            'userid' => $user->id,
+            'contextid' => \context_system::instance()->id,
+            'provider' => 'aiprovider_openai',
+            'timecreated' => $clock->time(),
+        ]);
+        $DB->insert_record('ai_action_register', (object) [
+            'actionname' => 'custom_action',
+            'actionid' => 742,
+            'success' => 0,
+            'userid' => $user->id,
+            'contextid' => \context_system::instance()->id,
+            'provider' => 'aiprovider_openai',
+            'timecreated' => $clock->time(),
+        ]);
+
+        set_config('generate_text', 1, 'aiplacement_editor');
+        set_config('custom_action', 1, 'aiplacement_editor');
+        set_config('enabledactions', json_encode([generate_text::class => 0]), 'aiplacement_editor');
+
+        $course = self::getDataGenerator()->create_course();
+        $module = self::getDataGenerator()->create_module('forum', ['course' => $course->id]);
+        $DB->set_field(
+            'course_modules',
+            'enabledaiactions',
+            json_encode(['generate_text' => 1]),
+            ['id' => $module->cmid],
+        );
+
+        upgrade_ai_migrate_action_names([
+            'aiprovider_openai' => [custom_action::class],
+            'aiplacement_editor' => [custom_action::class, generate_text::class],
+        ]);
+
+        $this->assertSame(
+            generate_text::class,
+            $DB->get_field('ai_action_register', 'actionname', ['actionid' => 741]),
+        );
+        $this->assertSame(
+            custom_action::class,
+            $DB->get_field('ai_action_register', 'actionname', ['actionid' => 742]),
+        );
+
+        $this->assertSame(
+            [
+                generate_text::class => 0,
+                custom_action::class => 1,
+            ],
+            json_decode(get_config('aiplacement_editor', 'enabledactions'), true),
+        );
+        $this->assertFalse(get_config('aiplacement_editor', 'generate_text'));
+        $this->assertFalse(get_config('aiplacement_editor', 'custom_action'));
+
+        $this->assertSame(
+            [generate_text::class => 1],
+            json_decode($DB->get_field('course_modules', 'enabledaiactions', ['id' => $module->cmid]), true),
+        );
     }
 }

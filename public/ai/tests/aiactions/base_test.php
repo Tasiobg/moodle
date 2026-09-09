@@ -16,6 +16,7 @@
 
 namespace core_ai\aiactions;
 
+use aiplacement_editor\tests\aiactions\custom_action;
 use core_ai\aiactions\responses\response_base;
 use core_ai\aiactions\responses\response_generate_text;
 use core_ai\aiactions;
@@ -31,11 +32,69 @@ use ReflectionClass;
 #[\PHPUnit\Framework\Attributes\CoversClass(\core_ai\aiactions\base::class)]
 final class base_test extends \advanced_testcase {
     /**
+     * Reset the string manager so mocked strings from one test do not leak into the next.
+     */
+    public function tearDown(): void {
+        parent::tearDown();
+
+        get_string_manager(true);
+    }
+
+    /**
      * Test get_basename.
      */
     public function test_get_basename(): void {
         $basename = aiactions\generate_text::get_basename();
         $this->assertEquals('generate_text', $basename);
+    }
+
+    /**
+     * Test that action strings resolve against the action's own language component.
+     *
+     * @param string $actionclass
+     * @param string $component
+     * @param string $stringid
+     * @param bool $hasinstruction
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('action_strings_provider')]
+    public function test_action_strings_resolve_against_language_component(
+        string $actionclass,
+        string $component,
+        string $stringid,
+        bool $hasinstruction,
+    ): void {
+        $stringmanager = $this->get_mocked_string_manager();
+        $stringmanager->mock_string($stringid, $component, 'Action name');
+        $stringmanager->mock_string("{$stringid}_desc", $component, 'Action description');
+
+        $this->assertSame($component, $actionclass::get_language_component());
+        $this->assertSame($stringid, $actionclass::get_help_string_id());
+        $this->assertSame('Action name', $actionclass::get_name());
+        $this->assertSame('Action description', $actionclass::get_description());
+
+        // The instruction string is optional and only returned when the component defines it.
+        $expectedinstruction = $hasinstruction ? get_string("{$stringid}_instruction", $component) : '';
+        $this->assertSame($expectedinstruction, $actionclass::get_system_instruction());
+    }
+
+    /**
+     * Data provider for {@see test_action_strings_resolve_against_language_component}.
+     *
+     * @return \Generator
+     */
+    public static function action_strings_provider(): \Generator {
+        yield 'core action' => [
+            'actionclass' => aiactions\generate_text::class,
+            'component' => 'core_ai',
+            'stringid' => 'action_generate_text',
+            'hasinstruction' => true,
+        ];
+        yield 'plugin action' => [
+            'actionclass' => custom_action::class,
+            'component' => 'aiplacement_editor',
+            'stringid' => 'action_custom_action',
+            'hasinstruction' => false,
+        ];
     }
 
     /**
@@ -46,6 +105,22 @@ final class base_test extends \advanced_testcase {
             get_string('action_generate_text', 'core_ai'),
             aiactions\generate_text::get_name()
         );
+    }
+
+    /**
+     * Test get_name_for_class.
+     */
+    public function test_get_name_for_class(): void {
+        $this->assertEquals(
+            get_string('action_generate_text', 'core_ai'),
+            base::get_name_for_class(aiactions\generate_text::class),
+        );
+        $this->assertEquals('legacy_action', base::get_name_for_class('legacy_action'));
+        $this->assertEquals(
+            'unavailable_plugin\\aiactions\\custom_action',
+            base::get_name_for_class('unavailable_plugin\\aiactions\\custom_action'),
+        );
+        $this->assertEquals(\stdClass::class, base::get_name_for_class(\stdClass::class));
     }
 
     /**

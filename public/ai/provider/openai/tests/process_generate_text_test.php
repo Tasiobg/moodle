@@ -18,6 +18,7 @@ namespace aiprovider_openai;
 
 use aiprovider_openai\test\testcase_helper_trait;
 use core_ai\aiactions\base;
+use core_ai\aiactions\generate_text;
 use core_ai\provider;
 use GuzzleHttp\Psr7\Response;
 
@@ -258,7 +259,7 @@ final class process_generate_text_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertTrue($result->get_success());
-        $this->assertEquals('generate_text', $result->get_actionname());
+        $this->assertEquals(generate_text::class, $result->get_actionname());
         $this->assertEquals($response['success'], $result->get_success());
         $this->assertEquals($response['generatedcontent'], $result->get_response_data()['generatedcontent']);
         $this->assertEquals($response['model'], $result->get_response_data()['model']);
@@ -284,7 +285,7 @@ final class process_generate_text_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertFalse($result->get_success());
-        $this->assertEquals('generate_text', $result->get_actionname());
+        $this->assertEquals(generate_text::class, $result->get_actionname());
         $this->assertEquals($response['errorcode'], $result->get_errorcode());
         $this->assertEquals($response['error'], $result->get_error());
         $this->assertEquals($response['errormessage'], $result->get_errormessage());
@@ -312,7 +313,7 @@ final class process_generate_text_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertTrue($result->get_success());
-        $this->assertEquals('generate_text', $result->get_actionname());
+        $this->assertEquals(generate_text::class, $result->get_actionname());
     }
 
     /**
@@ -337,7 +338,7 @@ final class process_generate_text_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\core_ai\aiactions\responses\response_base::class, $result);
         $this->assertFalse($result->get_success());
-        $this->assertEquals('generate_text', $result->get_actionname());
+        $this->assertEquals(generate_text::class, $result->get_actionname());
         $this->assertEquals(401, $result->get_errorcode());
         $this->assertEquals('Invalid Authentication', $result->get_errormessage());
     }

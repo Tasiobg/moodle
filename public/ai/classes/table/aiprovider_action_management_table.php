@@ -162,14 +162,14 @@ class aiprovider_action_management_table extends flexible_table implements dynam
         $labelstr = get_string($identifier, 'core_admin', $row->action::get_name());
 
         $params = [
-            'id' => 'admin-toggle-' . $row->action::get_basename(),
+            'id' => 'admin-toggle-' . manager::get_action_form_field_name($row->action),
             'checked' => $enabled,
             'dataattributes' => [
                 'name' => 'id',
                 'value' => $row->action,
                 'toggle-method' => $this->get_toggle_service(),
                 'action' => 'togglestate',
-                'plugin' => $this->pluginname . "-" . $row->action::get_basename(),
+                'plugin' => $this->pluginname . "-" . $row->action,
                 'state' => $enabled ? 1 : 0,
             ],
             'title' => $labelstr,

@@ -34,7 +34,7 @@ abstract class response_base {
      * Constructor.
      *
      * @param bool $success The success status of the action.
-     * @param string $actionname The name of the action that was processed.
+     * @param string $actionname Fully-qualified action class name.
      * @param int $errorcode Error code. Must exist if success is false.
      * @param string $error Error name. Must exist if success is false.
      * @param string $errormessage Error message.
@@ -43,7 +43,7 @@ abstract class response_base {
     public function __construct(
         /** @var bool The success status of the action. */
         private bool $success,
-        /** @var string The name of the action that was processed. */
+        /** @var string Fully-qualified action class name. */
         private string $actionname,
         /** @var int  Error code. Must exist if status is error. */
         private int $errorcode = 0,
@@ -93,7 +93,7 @@ abstract class response_base {
     }
 
     /**
-     * Get the name of the action that was processed.
+     * Get Fully-qualified action class name.
      *
      * @return string
      */

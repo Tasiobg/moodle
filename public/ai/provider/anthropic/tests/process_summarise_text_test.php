@@ -16,6 +16,7 @@
 
 namespace aiprovider_anthropic;
 
+use core_ai\aiactions\summarise_text;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -96,6 +97,6 @@ final class process_summarise_text_test extends \advanced_testcase {
 
         $result = $method->invoke($processor, $response);
         $this->assertTrue($result->get_success());
-        $this->assertEquals('summarise_text', $result->get_actionname());
+        $this->assertEquals(summarise_text::class, $result->get_actionname());
     }
 }

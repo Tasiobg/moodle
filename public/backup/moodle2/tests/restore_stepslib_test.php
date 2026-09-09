@@ -31,6 +31,7 @@ use restore_controller;
 #[\PHPUnit\Framework\Attributes\CoversMethod(\restore_section_structure_step::class, 'process_section')]
 #[\PHPUnit\Framework\Attributes\CoversMethod(\restore_root_task::class, 'define_settings')]
 #[\PHPUnit\Framework\Attributes\CoversMethod(\restore_load_included_files::class, 'process_file')]
+#[\PHPUnit\Framework\Attributes\CoversMethod(\restore_module_structure_step::class, 'process_module')]
 final class restore_stepslib_test extends \advanced_testcase {
     /**
      * Setup to include all libraries.
@@ -147,6 +148,39 @@ final class restore_stepslib_test extends \advanced_testcase {
             $this->assertEquals($originalsections[0]->$field, $restoredsections[0]->$field);
             $this->assertEquals($originalsections[1]->$field, $restoredsections[1]->$field);
         }
+    }
+
+    /**
+     * Test legacy AI action basenames are normalized when restoring a course module.
+     */
+    public function test_restore_module_normalizes_legacy_ai_actions(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $forum = $this->getDataGenerator()->create_module('forum', ['course' => $course->id]);
+        $legacyactions = json_encode([
+            'generate_text' => 1,
+            'summarise_text' => 0,
+            \core_ai\aiactions\explain_text::class => 1,
+        ]);
+        $DB->set_field('course_modules', 'enabledaiactions', $legacyactions, ['id' => $forum->cmid]);
+
+        $backupid = $this->backup_course($course);
+        $newcourseid = $this->restore_replacing_content($backupid);
+
+        $moduleid = $DB->get_field('modules', 'id', ['name' => 'forum']);
+        $enabledaiactions = $DB->get_field('course_modules', 'enabledaiactions', [
+            'course' => $newcourseid,
+            'module' => $moduleid,
+        ]);
+        $this->assertEquals([
+            \core_ai\aiactions\explain_text::class => 1,
+            \core_ai\aiactions\generate_text::class => 1,
+            \core_ai\aiactions\summarise_text::class => 0,
+        ], json_decode($enabledaiactions, true));
     }
 
     /**

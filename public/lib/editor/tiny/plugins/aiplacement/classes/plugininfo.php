@@ -124,8 +124,8 @@ class plugininfo extends plugin implements
         );
 
         $allowedactions = [];
-        foreach (array_keys(self::$possibleactions) as $action) {
-            $allowedactions[$action] = array_key_exists($action, $availableactions);
+        foreach (self::$possibleactions as $action => $actionclass) {
+            $allowedactions[$action] = array_key_exists($actionclass, $availableactions);
 
             if ($allowedactions[$action] && $action == 'generate_image') {
                 // For generate image, we need to check if the user has the capability to upload files.
