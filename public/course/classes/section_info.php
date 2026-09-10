@@ -20,6 +20,7 @@ use ArrayIterator;
 use IteratorAggregate;
 use Traversable;
 use core\context\course as context_course;
+use core_course\cache\wwwroot_encoder;
 use core_courseformat\sectiondelegate;
 use core_courseformat\sectiondelegatemodule;
 
@@ -257,6 +258,7 @@ class section_info implements IteratorAggregate {
                 $this->{'_' . $field} = $value;
             }
         }
+        $this->_summary = wwwroot_encoder::decode($this->_summary);
 
         // Other data from constructor arguments.
         $this->_sectionnum = $number;

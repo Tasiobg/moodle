@@ -25,6 +25,7 @@ use core\url;
 use core\output\core_renderer;
 use core\output\renderer_base;
 use core\lang_string;
+use core_course\cache\wwwroot_encoder;
 use section_info;
 use core\context\module as context_module;
 use core\context\course as context_course;
@@ -1399,15 +1400,17 @@ class cm_info implements IteratorAggregate {
         $this->groupmode        = isset($mod->groupmode) ? $mod->groupmode : 0;
         $this->groupingid       = isset($mod->groupingid) ? $mod->groupingid : 0;
         $this->indent           = isset($mod->indent) ? $mod->indent : 0;
-        $this->extra            = isset($mod->extra) ? $mod->extra : '';
+        $this->extra            = isset($mod->extra) ? wwwroot_encoder::decode($mod->extra) : '';
         $this->extraclasses     = isset($mod->extraclasses) ? $mod->extraclasses : '';
         // The iconurl may be stored as either string or instance of url.
-        $this->iconurl          = isset($mod->iconurl) ? new url($mod->iconurl) : '';
-        $this->onclick          = isset($mod->onclick) ? $mod->onclick : '';
-        $this->content          = isset($mod->content) ? $mod->content : '';
+        $this->iconurl          = isset($mod->iconurl) ? new url(wwwroot_encoder::decode($mod->iconurl)) : '';
+        $this->onclick          = isset($mod->onclick) ? wwwroot_encoder::decode($mod->onclick) : '';
+        $this->content          = isset($mod->content) ? wwwroot_encoder::decode($mod->content) : '';
         $this->icon             = isset($mod->icon) ? $mod->icon : '';
         $this->iconcomponent    = isset($mod->iconcomponent) ? $mod->iconcomponent : '';
-        $this->customdata       = isset($mod->customdata) ? $mod->customdata : '';
+        $this->customdata       = isset($mod->customdata)
+            ? wwwroot_encoder::decode($mod->customdata, skipserialized: true)
+            : '';
         $this->showdescription  = isset($mod->showdescription) ? $mod->showdescription : 0;
         $this->state = self::STATE_BASIC;
 

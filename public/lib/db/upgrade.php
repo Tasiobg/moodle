@@ -2378,5 +2378,14 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2026092300.01);
     }
 
+    if ($oldversion < 2026100500.01) {
+        // The coursemodinfo cache now stores site URLs against a placeholder instead of the wwwroot,
+        // so every existing entry has to be regenerated. Bumping cacherev is enough because the cache
+        // is versioned against it.
+        increment_revision_number('course', 'cacherev', '');
+
+        upgrade_main_savepoint(true, version: 2026100500.01);
+    }
+
     return true;
 }

@@ -1,0 +1,26 @@
+issueNumber: MDL-88334
+notes:
+  core_course:
+    - message: >-
+        The coursemodinfo cache no longer stores the site wwwroot. The URL-bearing
+        fields of each cached activity (`content`, `extra`, `onclick`, `iconurl` and
+        `customdata`) and each cached section summary are stored against the
+        `\core_course\cache\wwwroot_encoder::PLACEHOLDER` token instead, and the token
+        is swapped to the wwwroot of the incoming request when `cm_info` and
+        `section_info` objects are built.
+
+        Note that this changes the behaviour: any absolute link to this site stored
+        in these fields, including teacher-authored links, now resolves to the domain
+        serving the current request rather than the domain on which the link was
+        originally authored.
+
+        Activity modules are unaffected and should keep returning absolute URLs from
+        their `<modname>_get_coursemodule_info()` callback, with one exception: URLs
+        inside a `customdata` value that is a PHP serialized string are left as they
+        are, so that the length prefixes stay valid, and keep pointing at the domain
+        the cache was built on. Only code reading the `core/coursemodinfo` MUC entry
+        directly, rather than through `get_fast_modinfo()` or
+        `\core_course\modinfo::get_array_of_activities()`, needs to decode the token
+        itself with `\core_course\cache\wwwroot_encoder::decode_course_module()` or
+        `\core_course\cache\wwwroot_encoder::decode_course_section()`.
+      type: changed
