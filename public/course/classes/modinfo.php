@@ -18,6 +18,7 @@ namespace core_course;
 
 use cm_info;
 use core_cache\cache;
+use core_course\cache\wwwroot_encoder;
 use core_courseformat\sectiondelegatemodule;
 use core\context\module as context_module;
 use core\context_helper;
@@ -807,7 +808,9 @@ class modinfo {
      *     but preferably should have all cached fields.
      * @param bool $partialrebuild Indicate if it's partial course cache rebuild or not
      * @return stdClass object with all cached keys of the course plus fields modinfo and sectioncache.
-     *     The same object is stored in MUC
+     *     The same object is stored in MUC, so its URL bearing fields hold the
+     *     {@see \core_course\cache\wwwroot_encoder::PLACEHOLDER} token and must be read through
+     *     {@see cm_info}, {@see \section_info} or the wwwroot_encoder decode methods
      * @throws moodle_exception if course is not found (if $course object misses some of the
      *     necessary fields it is re-requested from database)
      */
@@ -864,6 +867,8 @@ class modinfo {
         foreach (self::$cachedfields as $key) {
             $coursemodinfo->$key = $course->$key;
         }
+        // Store URLs using a placeholder so it can be replaced with the site's current wwwroot when retrieved.
+        wwwroot_encoder::encode_course_cache($coursemodinfo);
         // Set the accumulated activities and sections information in cache, together with cacherev.
         $cachecoursemodinfo->set_versioned($cachekey, $course->cacherev, $coursemodinfo);
         return $coursemodinfo;
@@ -1022,7 +1027,9 @@ class modinfo {
             $cachecoursemodinfo = cache::make('core', 'coursemodinfo');
             $coursemodinfo = $cachecoursemodinfo->get_versioned($course->id, $course->cacherev);
             if ($coursemodinfo !== false) {
-                $mods = $coursemodinfo->modinfo;
+                foreach ($coursemodinfo->modinfo as $cmid => $mod) {
+                    $mods[$cmid] = wwwroot_encoder::decode_course_module($mod);
+                }
             }
         }
 
